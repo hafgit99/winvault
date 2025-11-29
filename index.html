@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WinVault - Güvenli Şifre Yöneticisi</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script>
         tailwind.config = {
@@ -139,7 +139,7 @@
                                 <a href="#pricing" className="hover:text-white transition-colors">Fiyatlandırma</a>
                             </nav>
                             <a href="https://github.com/hafgit99/winvault/releases/download/v1.0.0/WinVault.Setup.1.0.0.exe" className="bg-white text-slate-900 px-5 py-2.5 rounded-full font-bold text-sm hover:bg-blue-50 transition-colors">
-                                İndir v1.0
+                                3 Gün Ücretsiz Dene
                             </a>
                         </div>
                     </header>
@@ -165,7 +165,7 @@
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                                 <a href="https://github.com/hafgit99/winvault/releases/download/v1.0.0/WinVault.Setup.1.0.0.exe" className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-lg flex items-center space-x-2 transition-all shadow-lg shadow-blue-600/20">
                                     <Download className="w-5 h-5" />
-                                    <span>Windows İçin İndir</span>
+                                    <span>Ücretsiz İndir (3 Gün)</span>
                                 </a>
                                 <button className="px-8 py-4 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white rounded-xl font-bold text-lg transition-all">
                                     Özellikleri İncele
@@ -268,17 +268,18 @@
                             </div>
 
                             <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
-                                {/* Free Plan */}
+                                {/* Trial Plan */}
                                 <div className="p-8 rounded-3xl border border-slate-800 bg-slate-900/50">
-                                    <h3 className="text-xl font-bold text-slate-400 mb-2">Ücretsiz</h3>
-                                    <div className="text-4xl font-bold mb-6">0€</div>
+                                    <h3 className="text-xl font-bold text-slate-400 mb-2">Deneme Sürümü</h3>
+                                    <div className="text-4xl font-bold mb-6">Ücretsiz</div>
+                                    <p className="text-sm text-slate-400 mb-6">WinVault'u 3 gün boyunca tüm özellikleriyle test edin.</p>
                                     <ul className="space-y-4 mb-8">
+                                        <li className="flex items-center text-slate-300"><Check className="w-5 h-5 text-green-500 mr-3" /> 3 Gün Tam Erişim</li>
                                         <li className="flex items-center text-slate-300"><Check className="w-5 h-5 text-green-500 mr-3" /> Sınırsız Şifre</li>
-                                        <li className="flex items-center text-slate-300"><Check className="w-5 h-5 text-green-500 mr-3" /> Güvenli Notlar</li>
-                                        <li className="flex items-center text-slate-300"><Check className="w-5 h-5 text-green-500 mr-3" /> Şifre Üretici</li>
                                         <li className="flex items-center text-slate-300"><Check className="w-5 h-5 text-green-500 mr-3" /> Yerel Depolama</li>
+                                        <li className="flex items-center text-slate-500"><X className="w-5 h-5 text-slate-500 mr-3" /> Süre sonunda lisans gerekir</li>
                                     </ul>
-                                    <a href="https://github.com/hafgit99/winvault/releases/download/v1.0.0/WinVault.Setup.1.0.0.exe" className="block w-full text-center py-3 rounded-xl border border-slate-700 font-bold hover:bg-slate-800 transition-colors">İndir</a>
+                                    <a href="https://github.com/hafgit99/winvault/releases/download/v1.0.0/WinVault.Setup.1.0.0.exe" className="block w-full text-center py-3 rounded-xl border border-slate-700 font-bold hover:bg-slate-800 transition-colors">Hemen Dene</a>
                                 </div>
 
                                 {/* PRO Plan */}
@@ -288,10 +289,10 @@
                                     <div className="text-4xl font-bold mb-1">10€</div>
                                     <div className="text-sm text-slate-500 mb-6">Tek seferlik ömür boyu lisans</div>
                                     <ul className="space-y-4 mb-8">
-                                        <li className="flex items-center text-white"><Check className="w-5 h-5 text-blue-500 mr-3" /> <strong>Tüm Ücretsiz Özellikler</strong></li>
-                                        <li className="flex items-center text-white"><Check className="w-5 h-5 text-blue-500 mr-3" /> Şifreli Yedekleme (.winvault)</li>
+                                        <li className="flex items-center text-white"><Check className="w-5 h-5 text-blue-500 mr-3" /> <strong>Sınırsız Kullanım Süresi</strong></li>
+                                        <li className="flex items-center text-white"><Check className="w-5 h-5 text-blue-500 mr-3" /> Ömür Boyu Erişim</li>
                                         <li className="flex items-center text-white"><Check className="w-5 h-5 text-blue-500 mr-3" /> Ticari Kullanım İzni</li>
-                                        <li className="flex items-center text-white"><Check className="w-5 h-5 text-blue-500 mr-3" /> Öncelikli E-posta Desteği</li>
+                                        <li className="flex items-center text-white"><Check className="w-5 h-5 text-blue-500 mr-3" /> Öncelikli Destek</li>
                                     </ul>
                                     <button className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors shadow-lg shadow-blue-600/20">Satın Al</button>
                                 </div>
