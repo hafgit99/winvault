@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WinVault - Security Whitepaper | Security Architecture</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="WinVault Security Architecture and Technical Review. Zero-Knowledge and AES-256 encryption details.">
+    <meta name="keywords"
+        content="security whitepaper, winvault security, aes-256, zero-knowledge, offline password manager, encryption details">
+    <meta name="author" content="HeTech">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://hetech-me.space/winvault/security-en.html">
+
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #60a5fa, #34d399);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Icons
+        const Shield = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>;
+
+        const App = () => {
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <header className="fixed w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
+                        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+                            <a href="index-en.html" className="flex items-center space-x-2">
+                                <div className="p-2 bg-blue-600 rounded-lg">
+                                    <Shield className="text-white w-6 h-6" />
+                                </div>
+                                <span className="text-xl font-bold tracking-tight text-white">WinVault</span>
+                            </a>
+                            <nav className="hidden md:flex space-x-8 text-sm font-medium text-slate-400">
+                                <a href="index-en.html" className="hover:text-white transition-colors">Home</a>
+                                <a href="index-en.html#features" className="hover:text-white transition-colors">Features</a>
+                                <a href="index-en.html#pricing" className="hover:text-white transition-colors">Pricing</a>
+                                <a href="index-en.html#contact" className="hover:text-white transition-colors">Contact</a>
+                                <a href="#" className="text-white font-bold cursor-default">Security</a>
+                                <a href="security.html" className="hover:text-white transition-colors flex items-center space-x-1">
+                                    <span>🌐</span>
+                                    <span>TR</span>
+                                </a>
+                            </nav>
+                            <a href="https://github.com/hafgit99/winvault/releases/download/v1.0.0/WinVault.Setup.1.0.0.exe" className="bg-white text-slate-900 px-5 py-2.5 rounded-full font-bold text-sm hover:bg-blue-50 transition-colors">
+                                Download
+                            </a>
+                        </div>
+                    </header>
+
+                    <main className="flex-grow pt-32 pb-20 px-6">
+                        <div className="container mx-auto max-w-4xl">
+                            <div className="mb-12 text-center">
+                                <div className="inline-flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-full px-4 py-1.5 mb-6">
+                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                    <span className="text-xs font-medium text-slate-300">Version 1.0 • 2025</span>
+                                </div>
+                                <h1 className="text-4xl md:text-5xl font-extrabold mb-6 text-white">
+                                    WinVault <span className="gradient-text">Security Architecture</span>
+                                </h1>
+                                <p className="text-xl text-slate-400">Technical Review and Encryption Standards Whitepaper</p>
+                            </div>
+
+                            <article className="prose prose-invert prose-lg max-w-none">
+                                <section className="mb-12">
+                                    <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">1. Introduction</h2>
+                                    <p className="text-slate-300 leading-relaxed mb-4">
+                                        This document explains the security model, data encryption standards, and architectural principles of WinVault Desktop Password Manager. WinVault is developed based on "Zero-Knowledge" and "Local-First" principles. Our goal is to protect user data privacy and integrity at the highest level without server dependency.
+                                    </p>
+                                </section>
+
+                                <section className="mb-12">
+                                    <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">2. Security Model</h2>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">2.1. Zero-Knowledge Architecture</h3>
+                                        <p className="text-slate-300 leading-relaxed mb-3">
+                                            WinVault operates on the "Zero-Knowledge" principle. This means your Master Password and the unencrypted version of your data never leave your device.
+                                        </p>
+                                        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                            <li>Your Master Password is not sent to servers.</li>
+                                            <li>No one, including the developer team, can see your data.</li>
+                                            <li>If you forget your password, it is mathematically impossible for us to recover your data.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">2.2. Offline-First</h3>
+                                        <p className="text-slate-300 leading-relaxed mb-3">
+                                            WinVault is a desktop application (Electron) that does not require an internet connection.
+                                        </p>
+                                        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                            <li><strong>Attack Surface:</strong> Since your data is not uploaded to the cloud, it is 100% immune to Remote Server Breach attacks.</li>
+                                            <li><strong>Storage:</strong> All data is stored in an encrypted IndexedDB database under the operating system's protected AppData directory on the user's device.</li>
+                                        </ul>
+                                    </div>
+                                </section>
+
+                                <section className="mb-12">
+                                    <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">3. Cryptography and Encryption</h2>
+                                    <p className="text-slate-300 leading-relaxed mb-4">
+                                        WinVault uses industry-standard and peer-reviewed cryptographic algorithms. Proprietary or untested algorithms are not used.
+                                    </p>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">3.1. Data Encryption</h3>
+                                        <p className="text-slate-300 leading-relaxed mb-3">
+                                            All data in the user's vault (passwords, notes, card info, file attachments) is encrypted with the AES-256-GCM (Advanced Encryption Standard - Galois/Counter Mode) algorithm.
+                                        </p>
+                                        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                            <li><strong>Key Length:</strong> 256-bit</li>
+                                            <li><strong>Mode:</strong> GCM (Ensures both confidentiality and data integrity).</li>
+                                            <li><strong>IV (Initialization Vector):</strong> A 96-bit random and unique IV is generated for each encryption operation.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">3.2. Key Derivation (KDF)</h3>
+                                        <p className="text-slate-300 leading-relaxed mb-3">
+                                            The Master Password entered by the user is not used directly as an encryption key. Instead, it is converted into a key using the Argon2id algorithm, which is resistant to brute-force and rainbow table attacks.
+                                        </p>
+                                        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                            <li><strong>Algorithm:</strong> Argon2id (Winner of the 2015 Password Hashing Competition).</li>
+                                            <li><strong>Parameters:</strong>
+                                                <ul className="list-disc list-inside ml-6 mt-1 text-slate-400">
+                                                    <li>Memory Cost: 1024 MB (To increase attacker's hardware cost).</li>
+                                                    <li>Iterations: 32 Cycles.</li>
+                                                    <li>Parallelism: 1.</li>
+                                                </ul>
+                                            </li>
+                                            <li className="mt-1"><strong>Salt:</strong> A cryptographically secure random salt is used for each user and operation.</li>
+                                        </ul>
+                                    </div>
+                                </section>
+
+                                <section className="mb-12">
+                                    <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">4. Memory & Access Security</h2>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">4.1. Memory Wiping (RAM Protection)</h3>
+                                        <p className="text-slate-300 leading-relaxed mb-3">
+                                            When the application is locked or closed:
+                                        </p>
+                                        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                            <li>Variables holding sensitive data (State) are instantly cleared from memory.</li>
+                                            <li>Encryption keys are wiped from RAM.</li>
+                                            <li>This provides protection against "Cold Boot" or Memory Dump attacks.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">4.2. Clipboard Clearing</h3>
+                                        <p className="text-slate-300 leading-relaxed">
+                                            When a user copies a password, the operating system clipboard is automatically cleared after 30 seconds. This prevents data from being accidentally pasted elsewhere.
+                                        </p>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">4.3. Auto-Lock</h3>
+                                        <p className="text-slate-300 leading-relaxed">
+                                            If no mouse or keyboard movement is detected for a set period (default 5 min), the application automatically logs out and clears data from memory.
+                                        </p>
+                                    </div>
+                                </section>
+
+                                <section className="mb-12">
+                                    <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">5. Data Integrity and Backup</h2>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">5.1. Encrypted Backup (.winvault)</h3>
+                                        <p className="text-slate-300 leading-relaxed mb-3">
+                                            When users want to move or upload their data, an encrypted file in .winvault format is created.
+                                        </p>
+                                        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                            <li>This file is re-encrypted using AES-256 with an external password defined by the user.</li>
+                                            <li>The file structure includes HMAC (Hash-based Message Authentication Code) like structures to verify data integrity.</li>
+                                        </ul>
+                                    </div>
+                                </section>
+
+                                <section className="mb-12">
+                                    <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">6. Third-Party Audits and Libraries</h2>
+                                    <p className="text-slate-300 leading-relaxed mb-3">
+                                        WinVault is built on proven open-source libraries:
+                                    </p>
+                                    <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                        <li><strong>Electron:</strong> Chromium-based secure sandbox environment.</li>
+                                        <li><strong>Web Crypto API:</strong> The browser's native, hardware-accelerated cryptography engine.</li>
+                                        <li><strong>hash-wasm:</strong> High-performance WebAssembly module for Argon2id implementation.</li>
+                                    </ul>
+                                </section>
+
+                                <section className="p-8 rounded-2xl bg-slate-900 border border-slate-800">
+                                    <h2 className="text-2xl font-bold text-white mb-4">Conclusion</h2>
+                                    <p className="text-slate-300 leading-relaxed">
+                                        WinVault combines the most powerful tools of modern cryptography with a user-friendly and offline architecture. You are the sole owner of your data, and only you hold the key.
+                                    </p>
+                                </section>
+                            </article>
+                        </div>
+                    </main>
+
+                    <footer className="py-10 border-t border-slate-900 bg-slate-950 text-center">
+                        <p className="text-slate-600 text-sm">
+                            © 2025 WinVault. All rights reserved. <br />
+                            <a href="mailto:sales@hetech-me.space" className="hover:text-blue-500 transition-colors">sales@hetech-me.space</a>
+                        </p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>

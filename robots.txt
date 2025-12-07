@@ -1,0 +1,10 @@
+# robots.txt for hetech-me.space
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://hetech-me.space/sitemap.xml
+
+# Tarama hızı (isteğe bağlı)
+Crawl-delay: 1

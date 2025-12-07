@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WinVault - Güvenlik Whitepaper | Security Architecture</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="WinVault Güvenlik Mimarisi ve Teknik İnceleme. Sıfır Bilgi (Zero-Knowledge) ve AES-256 şifreleme detayları.">
+    <meta name="keywords"
+        content="güvenlik whitepaper, security whitepaper, winvault security, aes-256, zero-knowledge, offline password manager">
+    <meta name="author" content="HeTech">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://hetech-me.space/winvault/security.html">
+
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #60a5fa, #34d399);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Icons
+        const Shield = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>;
+
+        const App = () => {
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <header className="fixed w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
+                        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+                            <a href="index.html" className="flex items-center space-x-2">
+                                <div className="p-2 bg-blue-600 rounded-lg">
+                                    <Shield className="text-white w-6 h-6" />
+                                </div>
+                                <span className="text-xl font-bold tracking-tight text-white">WinVault</span>
+                            </a>
+                            <nav className="hidden md:flex space-x-8 text-sm font-medium text-slate-400">
+                                <a href="index.html" className="hover:text-white transition-colors">Ana Sayfa</a>
+                                <a href="index.html#features" className="hover:text-white transition-colors">Özellikler</a>
+                                <a href="index.html#pricing" className="hover:text-white transition-colors">Fiyatlandırma</a>
+                                <a href="index.html#contact" className="hover:text-white transition-colors">İletişim</a>
+                                <a href="#" className="text-white font-bold cursor-default">Güvenlik</a>
+                                <a href="security-en.html" className="hover:text-white transition-colors flex items-center space-x-1">
+                                    <span>🌐</span>
+                                    <span>EN</span>
+                                </a>
+                            </nav>
+                            <a href="https://github.com/hafgit99/winvault/releases/download/v1.0.0/WinVault.Setup.1.0.0.exe" className="bg-white text-slate-900 px-5 py-2.5 rounded-full font-bold text-sm hover:bg-blue-50 transition-colors">
+                                İndir
+                            </a>
+                        </div>
+                    </header>
+
+                    <main className="flex-grow pt-32 pb-20 px-6">
+                        <div className="container mx-auto max-w-4xl">
+                            <div className="mb-12 text-center">
+                                <div className="inline-flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-full px-4 py-1.5 mb-6">
+                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                    <span className="text-xs font-medium text-slate-300">Versiyon 1.0 • 2025</span>
+                                </div>
+                                <h1 className="text-4xl md:text-5xl font-extrabold mb-6 text-white">
+                                    WinVault <span className="gradient-text">Güvenlik Mimarisi</span>
+                                </h1>
+                                <p className="text-xl text-slate-400">Teknik İnceleme ve Şifreleme Standartları Whitepaper</p>
+                            </div>
+
+                            <article className="prose prose-invert prose-lg max-w-none">
+                                <section className="mb-12">
+                                    <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">1. Giriş (Introduction)</h2>
+                                    <p className="text-slate-300 leading-relaxed mb-4">
+                                        Bu belge, WinVault Masaüstü Şifre Yöneticisi'nin güvenlik modelini, veri şifreleme standartlarını ve mimari prensiplerini açıklar. WinVault, "Sıfır Bilgi" (Zero-Knowledge) ve "Yerel Öncelikli" (Local-First) prensiplerine dayanarak geliştirilmiştir. Amacımız, kullanıcı verilerinin gizliliğini ve bütünlüğünü, sunucu bağımlılığı olmadan en üst düzeyde korumaktır.
+                                    </p>
+                                </section>
+
+                                <section className="mb-12">
+                                    <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">2. Güvenlik Modeli (Security Model)</h2>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">2.1. Sıfır Bilgi Mimarisi (Zero-Knowledge Architecture)</h3>
+                                        <p className="text-slate-300 leading-relaxed mb-3">
+                                            WinVault, "Sıfır Bilgi" prensibiyle çalışır. Bu, ana şifrenizin (Master Password) ve verilerinizin şifrelenmemiş halinin asla cihazınızdan dışarı çıkmadığı anlamına gelir.
+                                        </p>
+                                        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                            <li>Ana şifreniz sunuculara gönderilmez.</li>
+                                            <li>Geliştirici ekip dahil hiç kimse verilerinizi göremez.</li>
+                                            <li>Şifrenizi unutursanız, verilerinizi kurtarmamız matematiksel olarak imkansızdır.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">2.2. Çevrimdışı Çalışma (Offline-First)</h3>
+                                        <p className="text-slate-300 leading-relaxed mb-3">
+                                            WinVault, internet bağlantısı gerektirmeyen bir masaüstü uygulamasıdır (Electron).
+                                        </p>
+                                        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                            <li><strong>Saldırı Yüzeyi:</strong> Verileriniz buluta yüklenmediği için, uzaktan sunucu saldırılarına (Remote Server Breach) karşı %100 bağışıklığa sahiptir.</li>
+                                            <li><strong>Depolama:</strong> Tüm veriler, kullanıcının cihazında, işletim sisteminin korumalı AppData dizini altındaki şifreli IndexedDB veritabanında saklanır.</li>
+                                        </ul>
+                                    </div>
+                                </section>
+
+                                <section className="mb-12">
+                                    <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">3. Kriptografi ve Şifreleme (Cryptography)</h2>
+                                    <p className="text-slate-300 leading-relaxed mb-4">
+                                        WinVault, endüstri standardı ve hakemli (peer-reviewed) kriptografik algoritmalar kullanır. Özel veya test edilmemiş algoritmalar kullanılmaz.
+                                    </p>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">3.1. Veri Şifreleme (Data Encryption)</h3>
+                                        <p className="text-slate-300 leading-relaxed mb-3">
+                                            Kullanıcının kasasındaki tüm veriler (şifreler, notlar, kart bilgileri, dosya ekleri) AES-256-GCM (Advanced Encryption Standard - Galois/Counter Mode) algoritması ile şifrelenir.
+                                        </p>
+                                        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                            <li><strong>Anahtar Uzunluğu:</strong> 256-bit</li>
+                                            <li><strong>Mod:</strong> GCM (Hem gizlilik hem de veri bütünlüğü sağlar).</li>
+                                            <li><strong>IV (Initialization Vector):</strong> Her şifreleme işlemi için 96-bitlik rastgele ve benzersiz bir IV üretilir.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">3.2. Anahtar Türetme (Key Derivation - KDF)</h3>
+                                        <p className="text-slate-300 leading-relaxed mb-3">
+                                            Kullanıcının girdiği Ana Şifre, doğrudan şifreleme anahtarı olarak kullanılmaz. Bunun yerine, kaba kuvvet (brute-force) ve gökkuşağı tablosu (rainbow table) saldırılarına karşı dirençli olan Argon2id algoritması ile bir anahtara dönüştürülür.
+                                        </p>
+                                        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                            <li><strong>Algoritma:</strong> Argon2id (2015 Password Hashing Competition kazananı).</li>
+                                            <li><strong>Parametreler:</strong>
+                                                <ul className="list-disc list-inside ml-6 mt-1 text-slate-400">
+                                                    <li>Hafıza Maliyeti: 1024 MB (Saldırganın donanım maliyetini artırmak için).</li>
+                                                    <li>İterasyon: 32 Döngü.</li>
+                                                    <li>Paralellik: 1.</li>
+                                                </ul>
+                                            </li>
+                                            <li className="mt-1"><strong>Salt:</strong> Her kullanıcı ve işlem için kriptografik olarak güvenli rastgele tuz (Salt) kullanılır.</li>
+                                        </ul>
+                                    </div>
+                                </section>
+
+                                <section className="mb-12">
+                                    <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">4. Bellek ve Erişim Güvenliği (Memory & Access Security)</h2>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">4.1. Bellek Koruması (RAM Wiping)</h3>
+                                        <p className="text-slate-300 leading-relaxed mb-3">
+                                            Uygulama kilitlendiğinde (Lock) veya kapatıldığında:
+                                        </p>
+                                        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                            <li>Hassas verileri tutan değişkenler (State) bellekten anında silinir.</li>
+                                            <li>Şifreleme anahtarları RAM'den temizlenir.</li>
+                                            <li>Bu, "Cold Boot" veya RAM dökümü (Memory Dump) saldırılarına karşı koruma sağlar.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">4.2. Pano Temizleme (Clipboard Clearing)</h3>
+                                        <p className="text-slate-300 leading-relaxed">
+                                            Kullanıcı bir şifreyi kopyaladığında, 30 saniye sonra işletim sistemi panosu (Clipboard) otomatik olarak temizlenir. Bu, verilerin yanlışlıkla başka bir yere yapıştırılmasını önler.
+                                        </p>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">4.3. Otomatik Kilitleme (Auto-Lock)</h3>
+                                        <p className="text-slate-300 leading-relaxed">
+                                            Belirlenen süre boyunca (varsayılan 5 dk) fare veya klavye hareketi algılanmazsa, uygulama otomatik olarak oturumu kapatır ve verileri bellekten siler.
+                                        </p>
+                                    </div>
+                                </section>
+
+                                <section className="mb-12">
+                                    <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">5. Veri Bütünlüğü ve Yedekleme</h2>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-blue-400 mb-3">5.1. Şifreli Yedekleme (.winvault)</h3>
+                                        <p className="text-slate-300 leading-relaxed mb-3">
+                                            Kullanıcılar verilerini taşımak veya yedeklemek istediklerinde, .winvault formatında şifreli bir dosya oluşturulur.
+                                        </p>
+                                        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                            <li>Bu dosya, kullanıcının belirlediği harici bir şifre ile AES-256 kullanılarak tekrar şifrelenir.</li>
+                                            <li>Dosya yapısı, veri bütünlüğünü doğrulamak için HMAC (Hash-based Message Authentication Code) benzeri yapılar içerir.</li>
+                                        </ul>
+                                    </div>
+                                </section>
+
+                                <section className="mb-12">
+                                    <h2 className="text-2xl font-bold text-white mb-4 border-b border-slate-800 pb-2">6. Üçüncü Taraf Denetimi ve Kütüphaneler</h2>
+                                    <p className="text-slate-300 leading-relaxed mb-3">
+                                        WinVault, güvenliği kanıtlanmış açık kaynaklı kütüphaneler üzerine inşa edilmiştir:
+                                    </p>
+                                    <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
+                                        <li><strong>Electron:</strong> Chromium tabanlı güvenli sandbox ortamı.</li>
+                                        <li><strong>Web Crypto API:</strong> Tarayıcının yerel, donanım hızlandırmalı kriptografi motoru.</li>
+                                        <li><strong>hash-wasm:</strong> Argon2id uygulaması için yüksek performanslı WebAssembly modülü.</li>
+                                    </ul>
+                                </section>
+
+                                <section className="p-8 rounded-2xl bg-slate-900 border border-slate-800">
+                                    <h2 className="text-2xl font-bold text-white mb-4">Sonuç</h2>
+                                    <p className="text-slate-300 leading-relaxed">
+                                        WinVault, modern kriptografinin en güçlü araçlarını, kullanıcı dostu ve çevrimdışı bir mimari ile birleştirir. Verilerinizin tek sahibi sizsiniz ve anahtarı sadece sizde bulunur.
+                                    </p>
+                                </section>
+                            </article>
+                        </div>
+                    </main>
+
+                    <footer className="py-10 border-t border-slate-900 bg-slate-950 text-center">
+                        <p className="text-slate-600 text-sm">
+                            © 2025 WinVault. Tüm hakları saklıdır. <br />
+                            <a href="mailto:sales@hetech-me.space" className="hover:text-blue-500 transition-colors">sales@hetech-me.space</a>
+                        </p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
