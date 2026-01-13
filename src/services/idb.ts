@@ -21,9 +21,12 @@ interface IDBService {
 }
 
 let dbInstance: IDBDatabase | null = null;
-
-// HMAC için secret key (cihaza özgü olarak oluşturulur)
 let hmacKey: CryptoKey | null = null;
+
+const resetInternalState = () => {
+  dbInstance = null;
+  hmacKey = null;
+};
 
 // HMAC key'i başlat veya yükle
 // HMAC key'i başlat veya yükle
@@ -266,5 +269,6 @@ export const dbService = {
   saveConfig: (key: string, value: any) => saveData(STORE_CONFIG, key, value),
   getConfig: (key: string) => getData(STORE_CONFIG, key),
 
-  clear: clear
+  clear: clear,
+  resetInternalState: resetInternalState
 };

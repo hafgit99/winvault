@@ -6,6 +6,7 @@ WinVault takes security seriously. We employ industry-standard encryption and ad
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 2.0.x   | :white_check_mark: |
 | 1.1.x   | :white_check_mark: |
 | 1.0.x   | :white_check_mark: |
 | < 1.0   | :x:                |
@@ -47,10 +48,16 @@ WinVault is designed with a "Zero-Knowledge" and "Defense-in-Depth" philosophy.
 - **Secure Sessions:** Sessions are encrypted, strictly timed, and bound to hardware fingerprints.
 - **Biometrics:** Windows Hello and TouchID integration.
 
+### 6. Auditing & Active Defense
+- **Security Logging:** All authentication events, unauthorized access attempts, and integrity failures are logged to an encrypted `securityLogger` store (IndexedDB).
+- **Brute-Force Protection:** Enhanced rate limiting with exponential backoff (e.g., 1 min, 2 min, 4 min...) and device fingerprinting to prevent distributed attacks.
+- **WASM Integrity:** Argon2id hash parameters are strictly enforced to prevent downgrade attacks.
+
 ## Network Security
 - **Offline-First:** WinVault works offline by default.
-- **Localhost Only:** The native messaging host server accepts connections ONLY from localhost (127.0.0.1).
+- **Localhost Only:** Native messaging and extension servers accept connections ONLY from localhost (127.0.0.1).
 - **No Analytics:** No unique identifiers or usage data are sent to external servers.
+- **Port Hopping:** Local servers use dynamic port allocation to resist conflict and analysis.
 
 ## Security Best Practices for Users
 - Use a strong, unique Master Password.

@@ -12,10 +12,12 @@ WinVault utilizes military-grade encryption and advanced protection mechanisms:
 
 - **Zero-Knowledge Architecture:** Your data never leaves your device unencrypted.
 - **Argon2id & WASM Core:** State-of-the-art key derivation (Argon2id) running in isolated WebAssembly memory for maximum protection.
+- **Security Auditing & Logging:** Comprehensive `securityLogger` tracks failed logins, integrity breaches, and suspicious activity in an encrypted audit trail.
+- **Enhanced Rate Limiting:** Intelligent protection using exponential backoff and device fingerprinting to thwart brute-force attacks.
 - **Platform Hardening:**
   - **Strict CSP:** Comprehensive Content Security Policy to prevent XSS.
   - **Memory Protection:** Active anti-debugging with panic mode and OS-level key encryption (SafeStorage).
-  - **Dynamic Ports:** Extension server uses port hopping to resist conflict and analysis.
+  - **Secure Auto-Type:** Fileless credential injection using direct memory streams (stdin pipe) to reduce forensic footprint.
 - **Hardware Integration:** 
   - **WebAuthn / FIDO2:** Support for YubiKey/Titan keys via cross-platform credentials.
   - **Biometrics:** Windows Hello and TouchID integration.
@@ -55,6 +57,17 @@ WinVault utilizes military-grade encryption and advanced protection mechanisms:
    ```bash
    npm run electron:dev
    ```
+
+### 🧪 Running Tests
+
+WinVault includes a comprehensive suite of security and functional tests:
+
+```bash
+npm test
+# To run specific test suites
+npm test -- rateLimiter.test.ts
+npm test -- integrity.test.ts
+```
 
 ### Building for Production
 

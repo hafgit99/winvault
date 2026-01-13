@@ -88,8 +88,13 @@ export const useVaultStore = create<VaultState>((set) => ({
         return { categories: [...state.categories, newCat] };
     }),
 
-    deleteCategory: (id) => set((state) => ({
-        categories: state.categories.filter(c => c.id !== id),
-        credentials: state.credentials.map(c => c.category === id ? { ...c, category: 'General' } : c)
-    }))
+    deleteCategory: (id) => set((state) => {
+        const category = state.categories.find(c => c.id === id);
+        if (category?.isSystem) return state; // Prevent deleting system categories
+
+        return {
+            categories: state.categories.filter(c => c.id !== id),
+            credentials: state.credentials.map(c => c.category === id ? { ...c, category: 'General' } : c)
+        }
+    })
 }));
