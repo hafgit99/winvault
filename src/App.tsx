@@ -547,10 +547,29 @@ const App: React.FC = () => {
       if (file.name.endsWith('.winvault')) { setRestoreFileContent(content); setRestoreModalOpen(true); }
       else {
         try {
-          const parsed = parseCSV(content);
-          setCredentials([...credentials, ...parsed.map(p => ({ ...p, id: Math.random().toString(36).substring(2, 9), updatedAt: Date.now(), category: 'General', type: 'LOGIN' as const }))]);
-          addToast(t.restored);
-        } catch (err) { addToast("Import Error", 'error'); }
+          let parsed: any[] = [];
+          if (file.name.endsWith('.json')) {
+            parsed = JSON.parse(content);
+          } else {
+            parsed = parseCSV(content);
+          }
+
+          if (parsed.length > 0) {
+            setCredentials([...credentials, ...parsed.map(p => ({
+              ...p,
+              id: p.id || Math.random().toString(36).substring(2, 9),
+              updatedAt: p.updatedAt || Date.now(),
+              category: p.category || 'General',
+              type: p.type || 'LOGIN'
+            }))]);
+            addToast(t.restored);
+          } else {
+            addToast("Dosya boş veya geçersiz format!", 'error');
+          }
+        } catch (err) {
+          console.error("Import error:", err);
+          addToast("İçe aktarma hatası: Dosya formatı uyumsuz.", 'error');
+        }
       }
     };
     reader.readAsText(file); e.target.value = '';

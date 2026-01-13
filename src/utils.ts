@@ -765,19 +765,44 @@ export const hashPassword = async (password: string, providedSalt?: Uint8Array):
   return { hash, salt };
 };
 
-// Verify password with stored salt
+// Verify password with stored salt (with Fallback Support for older versions)
 export const verifyPassword = async (password: string, storedHash: string): Promise<boolean> => {
   try {
-    const storedSalt = await getStoredSalt();
-    if (!storedSalt) {
-      // Fallback to old fixed salt for migration
-      const fallbackSalt = new Uint8Array([12, 120, 22, 98, 33, 11, 87, 45, 99, 12, 55, 66, 77, 88, 99, 111]);
-      const { hash } = await hashPassword(password, fallbackSalt);
-      return hash === storedHash;
+    const storedSalt = await getStoredSalt() || new Uint8Array([12, 120, 22, 98, 33, 11, 87, 45, 99, 12, 55, 66, 77, 88, 99, 111]);
+
+    // 1. Try with current adaptive settings
+    const { hash: currentHash } = await hashPassword(password, storedSalt);
+    if (currentHash === storedHash) return true;
+
+    // 2. Try legacy configurations (Self-healing fallback)
+    const configurations = [
+      { iterations: 64, memorySize: 2048 },  // WinVault 2.x Intermediate
+      { iterations: 2, memorySize: 47104 },   // WinVault 2.x Original WASM
+      { iterations: 32, memorySize: 1024 },   // WinVault 1.x / GDPR Reference
+      { iterations: 3, memorySize: 65536 }    // Modern Fixed Standard
+    ];
+
+    for (const config of configurations) {
+      try {
+        const hash = await argon2id({
+          password,
+          salt: storedSalt,
+          parallelism: 1,
+          iterations: config.iterations,
+          memorySize: config.memorySize,
+          hashLength: 32,
+          outputType: 'hex',
+        });
+        if (hash === storedHash) {
+          console.log(`Login successful using legacy fallback (${config.iterations} iters, ${config.memorySize}KB mem)`);
+          return true;
+        }
+      } catch (e) {
+        continue;
+      }
     }
 
-    const { hash } = await hashPassword(password, storedSalt);
-    return hash === storedHash;
+    return false;
   } catch (error) {
     console.error('Password verification error:', error);
     return false;
@@ -804,9 +829,7 @@ const base64_to_buff = (b64: string): Uint8Array => {
 };
 
 // Derive Key from Password using PBKDF2 (For AES Key generation)
-// Note: We keep PBKDF2 for AES key derivation to allow fast lock/unlock, 
-// but use Argon2id for the Master Password Hash verification.
-const deriveKey = async (password: string, salt: Uint8Array): Promise<CryptoKey> => {
+const deriveKey = async (password: string, salt: Uint8Array, iterations: number = 600000): Promise<CryptoKey> => {
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(password) as any, // Cast to any to fix TS2345
@@ -818,7 +841,7 @@ const deriveKey = async (password: string, salt: Uint8Array): Promise<CryptoKey>
     {
       name: "PBKDF2",
       salt: salt as any, // Cast to any to avoid TS2769
-      iterations: 600000, // Modern standard (OWASP 2023)
+      iterations: iterations,
       hash: "SHA-256"
     },
     keyMaterial,
@@ -852,30 +875,38 @@ export const encryptData = async (data: any, password: string): Promise<string> 
 };
 
 export const decryptData = async (encryptedStr: string, password: string): Promise<any> => {
-  try {
-    const parts = encryptedStr.split(':');
-    if (parts.length !== 3) {
-      throw new Error("Invalid format");
+  const parts = encryptedStr.split(':');
+  if (parts.length !== 3) {
+    throw new Error("Invalid format");
+  }
+  const salt = base64_to_buff(parts[0]);
+  const iv = base64_to_buff(parts[1]);
+  const encryptedContent = base64_to_buff(parts[2]);
+
+  // Try modern standard first (600,000)
+  // Try legacy standard as fallback (100,000)
+  const iterationTries = [600000, 100000];
+
+  for (const iters of iterationTries) {
+    try {
+      const key = await deriveKey(password, salt, iters);
+      const decryptedContent = await crypto.subtle.decrypt(
+        {
+          name: "AES-GCM",
+          iv: iv as any
+        },
+        key,
+        encryptedContent as any
+      );
+      const decoded = new TextDecoder().decode(decryptedContent);
+      return JSON.parse(decoded);
+    } catch (e) {
+      // If it's the last try, throw the error
+      if (iters === iterationTries[iterationTries.length - 1]) {
+        console.error("Decryption error after fallbacks:", e);
+        throw new Error("Veri çözülemedi. Şifre yanlış veya veri bozuk.");
+      }
     }
-    const salt = base64_to_buff(parts[0]);
-    const iv = base64_to_buff(parts[1]);
-    const encryptedContent = base64_to_buff(parts[2]);
-    const key = await deriveKey(password, salt);
-
-    const decryptedContent = await crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: iv as any // Cast to any to fix TS2322
-      },
-      key,
-      encryptedContent as any // Fix TS2345
-    );
-
-    const decoded = new TextDecoder().decode(decryptedContent);
-    return JSON.parse(decoded);
-  } catch (error) {
-    console.error("Decryption error:", error);
-    throw new Error("Veri çözülemedi. Şifre yanlış veya veri bozuk.");
   }
 };
 
