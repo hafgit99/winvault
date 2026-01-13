@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain, globalShortcut, dialog, safeStorage } = require('electron');
 const path = require('path');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const crypto = require('crypto');
@@ -41,9 +41,8 @@ const getActiveWindowTitle = () => {
 };
 
 // Helper: Send Keys via VBScript (More reliable for mixed characters than raw PS SendKeys)
+// Helper: Send Keys via VBScript (Secure Stdin Pipe - No File)
 const sendKeys = (username, password) => {
-  // Escape special characters for SendKeys: + ^ % ~ ( ) { } [ ]
-  // VBScript SendKeys special chars: + ^ % ~ ( ) { } [ ]
   const escape = (str) => {
     if (!str) return '';
     return str.replace(/([+^%~(){}[\]])/g, "{$1}");
@@ -64,13 +63,12 @@ const sendKeys = (username, password) => {
     WshShell.SendKeys "{ENTER}"
   `;
 
-  const tempPath = path.join(os.tmpdir(), `autotype_${Date.now()}.vbs`);
-  fs.writeFileSync(tempPath, vbsContent);
+  // Execute VBScript via Stdin (Fileless)
+  const proc = spawn('cscript', ['//Nologo', '//E:vbs', '-']);
+  proc.stdin.write(vbsContent);
+  proc.stdin.end();
 
-  exec(`cscript //Nologo "${tempPath}"`, (err) => {
-    if (err) console.error("AutoType Error:", err);
-    // Cleanup
-  });
+  proc.on('error', (err) => console.error("AutoType Error:", err));
 };
 
 // Biometric Helpers (Windows Hello via PowerShell)
@@ -140,13 +138,13 @@ function createWindow() {
     console.error(`Unable to load preload ${preloadPath}: ${error.message}`);
   });
 
-  // CSP Settings
+  // CSP Settings for Platform Security (Strict)
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; connect-src 'self' http://127.0.0.1:* https: ws:;"
+          "default-src 'self' data: blob:; script-src 'self' blob: 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:* https: ws:;"
         ],
         'X-Content-Type-Options': ['nosniff'],
         'X-Frame-Options': ['DENY']
@@ -250,34 +248,42 @@ ipcMain.handle('select-backup-folder', async () => {
   return result.filePaths[0];
 });
 
-// Backup Encryption Helper - AES-256-GCM
-const encryptBackupData = (data) => {
-  const key = crypto.randomBytes(32); // 256-bit key
-  const iv = crypto.randomBytes(12); // 96-bit IV for GCM
+// Backup Encryption Helper - AES-256-GCM (PBKDF2 Derived Key)
+const encryptBackupData = (data, password) => {
+  if (!password) throw new Error('Backup password required');
+
+  const salt = crypto.randomBytes(16);
+  // Key Derivation: PBKDF2-HMAC-SHA256
+  const key = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
+
+  const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
 
   let encrypted = cipher.update(data, 'utf-8', 'base64');
   encrypted += cipher.final('base64');
   const authTag = cipher.getAuthTag();
 
-  // Format: base64(iv) + '.' + base64(authTag) + '.' + base64(key) + '.' + encrypted
-  return Buffer.from(iv).toString('base64') + '.' +
+  // Format: salt . iv . authTag . encrypted
+  return salt.toString('base64') + '.' +
+    iv.toString('base64') + '.' +
     authTag.toString('base64') + '.' +
-    key.toString('base64') + '.' +
     encrypted;
 };
 
-const decryptBackupData = (encryptedData) => {
+const decryptBackupData = (encryptedData, password) => {
+  if (!password) throw new Error('Backup password required');
+
   const parts = encryptedData.split('.');
   if (parts.length !== 4) {
     throw new Error('Invalid encrypted backup format');
   }
 
-  const iv = Buffer.from(parts[0], 'base64');
-  const authTag = Buffer.from(parts[1], 'base64');
-  const key = Buffer.from(parts[2], 'base64');
+  const salt = Buffer.from(parts[0], 'base64');
+  const iv = Buffer.from(parts[1], 'base64');
+  const authTag = Buffer.from(parts[2], 'base64');
   const encrypted = parts[3];
 
+  const key = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
   const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
   decipher.setAuthTag(authTag);
 
@@ -286,9 +292,9 @@ const decryptBackupData = (encryptedData) => {
   return decrypted;
 };
 
-ipcMain.handle('save-backup-file', async (event, filePath, content) => {
+ipcMain.handle('save-backup-file', async (event, filePath, content, password) => {
   try {
-    const encrypted = encryptBackupData(content);
+    const encrypted = encryptBackupData(content, password);
     fs.writeFileSync(filePath, encrypted, 'utf-8');
     return true;
   } catch (e) {
@@ -297,14 +303,21 @@ ipcMain.handle('save-backup-file', async (event, filePath, content) => {
   }
 });
 
-ipcMain.handle('load-backup-file', async (event, filePath) => {
+ipcMain.handle('load-backup-file', async (event, filePath, password) => {
   try {
     const encrypted = fs.readFileSync(filePath, 'utf-8');
-    // Eğer şifreli format değilse (eski backup), direkt döndür
+    // Eğer şifreli format değilse (eski backup - key gömülü), yeni yöntemle çözülemez.
+    // Ancak geriye dönük uyumluluk için eski key extraction deneyebiliriz ama şu an "Security Overhaul" yapıyoruz.
+    // Eski backuplar çalışmayabilir, bu beklenen bir durum.
+    // Veya basitçe, split uzunluğu 4 ise ve password varsa dene.
+
     if (!encrypted.includes('.') || encrypted.split('.').length !== 4) {
-      return encrypted;
+      // Plain text or legacy? Plain text ise dön.
+      if (encrypted.startsWith('{')) return encrypted;
+      throw new Error('Unsupported format');
     }
-    const decrypted = decryptBackupData(encrypted);
+
+    const decrypted = decryptBackupData(encrypted, password);
     return decrypted;
   } catch (e) {
     console.error("Backup Load Error:", e);

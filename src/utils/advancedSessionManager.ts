@@ -537,29 +537,51 @@ class AdvancedSessionManager {
     }
   }
 
-  // Extract key from hardware credential
+  // Extract key from hardware credential (Signature-based Derivation)
   private static async extractKeyFromCredential(credential: PublicKeyCredential): Promise<ArrayBuffer> {
-    if ('id' in credential) {
+    try {
+      // 1. Request an assertion (sign a challenge) to prove ownership and get signature
+      // The challenge should ideally be random per session, here using a fixed one for consistent key derivation check
+      // In a real scenario, this 'key' is transient session key
+
+      const challenge = new Uint8Array(32);
+      // Note: Using a zero-challenge for key derivation consistency if we want REPRODUCIBLE keys (e.g. for encryption).
+      // But for SESSION keys, random challenge is better.
+      // Since this method returns 'ArrayBuffer' to be used likely as a key, 
+      // if it's for 'Session Binding', we want a unique session key that requires hardware to produce.
+
       const response = await navigator.credentials.get({
         publicKey: {
-          challenge: new Uint8Array(32),
+          challenge: challenge, // Or randomized
           allowCredentials: [{
             id: credential.rawId,
             type: 'public-key',
             transports: ['usb', 'nfc', 'ble', 'internal']
-          }]
+          }],
+          userVerification: 'required'
         }
-      });
+      }) as PublicKeyCredential;
 
-      if (response && 'id' in response) {
-        // This is a simplified approach - in reality, you'd need to extract the key material
-        // from the credential response in a secure manner
-        console.warn('Hardware credential key extraction is simplified for demonstration');
+      if (response && response.response instanceof AuthenticatorAssertionResponse) {
+        // 2. Derive key from the signature using SHA-256
+        // The signature is the proof of hardware presence. 
+        // Using it as entropy source for the session key.
+        const signature = response.response.signature;
+
+        // Hash the signature to get a fixed-length (32 byte) key material
+        const keyMaterial = await crypto.subtle.digest('SHA-256', signature);
+
+        console.log('Hardware-bound session key derived successfully');
+        return keyMaterial;
       }
-    }
 
-    // Fallback to random key
-    return crypto.getRandomValues(new Uint8Array(32)).buffer;
+      throw new Error('Invalid assertion response');
+
+    } catch (e) {
+      console.error('Hardware key extraction failed:', e);
+      // Fallback only if absolutely necessary, but preferably throw to enforce hardware requirement
+      throw new Error('Hardware authentication failed');
+    }
   }
 
   // Start session monitoring

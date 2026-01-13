@@ -4,7 +4,7 @@ import { hashPassword, verifyPassword, verifyTOTP, TRANSLATIONS, decryptData } f
 import MasterPasswordSetup from './MasterPasswordSetup';
 import { useAppStore } from '../store/useAppStore';
 import { dbService } from '../services/idb';
-import { checkLoginAttempts, recordFailedLogin, clearFailedLogins, getLockoutStatus } from '../services/rateLimiter';
+import { rateLimiter } from '../services/rateLimiter';
 
 import { useVaultStore } from '../store/useVaultStore';
 
@@ -54,15 +54,17 @@ const MasterLogin: React.FC<MasterLoginProps> = ({ onUnlock, onReset, isDefaultP
 
     // Check rate limiting status
     const checkRateLimit = async () => {
-      const status = await checkLoginAttempts(undefined, lang);
-      if (!status.allowed) {
+      const fingerprint = await rateLimiter.getDeviceFingerprint();
+      const status = rateLimiter.isBlocked(fingerprint);
+
+      if (status.blocked) {
         setLockoutInfo({
           locked: true,
-          message: status.lockDuration || `${lang === 'tr' ? 'Lütfen bekleyin' : 'Please wait'}.`,
-          waitTime: status.waitTime
+          message: `${lang === 'tr' ? 'Çok fazla deneme. Lütfen bekleyin.' : 'Too many attempts. Please wait.'} (${status.remainingTime}s)`,
+          waitTime: status.remainingTime || 0
         });
-      } else if (status.remainingAttempts !== undefined) {
-        setRemainingAttempts(status.remainingAttempts);
+      } else {
+        setLockoutInfo(null);
       }
     };
     checkRateLimit();
@@ -106,12 +108,14 @@ const MasterLogin: React.FC<MasterLoginProps> = ({ onUnlock, onReset, isDefaultP
     setErrorMessage('');
 
     // Check rate limiting before processing
-    const rateLimitStatus = await checkLoginAttempts(undefined, lang);
-    if (!rateLimitStatus.allowed) {
+    const fingerprint = await rateLimiter.getDeviceFingerprint();
+    const rateLimitStatus = rateLimiter.isBlocked(fingerprint);
+
+    if (rateLimitStatus.blocked) {
       setLockoutInfo({
         locked: true,
-        message: rateLimitStatus.lockDuration || `${lang === 'tr' ? 'Lütfen bekleyin' : 'Please wait'}.`,
-        waitTime: rateLimitStatus.waitTime
+        message: `${lang === 'tr' ? 'Hesap kilitli.' : 'Account locked.'} (${rateLimitStatus.remainingTime}s)`,
+        waitTime: rateLimitStatus.remainingTime || 0
       });
       setLoading(false);
       return;
@@ -125,7 +129,8 @@ const MasterLogin: React.FC<MasterLoginProps> = ({ onUnlock, onReset, isDefaultP
 
         if (isValidPassword) {
           // Clear failed attempts on successful login
-          clearFailedLogins();
+          const fingerprint = await rateLimiter.getDeviceFingerprint();
+          rateLimiter.reset(fingerprint);
           setRemainingAttempts(null);
           setLockoutInfo(null);
 
@@ -143,16 +148,17 @@ const MasterLogin: React.FC<MasterLoginProps> = ({ onUnlock, onReset, isDefaultP
           }
         } else {
           // Record failed attempt and update UI
-          const failureResult = recordFailedLogin(undefined, lang);
-          if (!failureResult.allowed) {
+          const fingerprint = await rateLimiter.getDeviceFingerprint();
+          await rateLimiter.recordFailure(fingerprint);
+
+          const status = rateLimiter.isBlocked(fingerprint);
+          if (status.blocked) {
             setLockoutInfo({
               locked: true,
-              message: failureResult.lockDuration || `${lang === 'tr' ? 'Hesap kilitlendi' : 'Account locked'}.`,
-              waitTime: failureResult.waitTime
+              message: `${lang === 'tr' ? 'Hesap geçici olarak kilitlendi.' : 'Account temporarily locked.'} (${status.remainingTime}s)`,
+              waitTime: status.remainingTime || 0
             });
             setRemainingAttempts(null);
-          } else {
-            setRemainingAttempts(failureResult.remainingAttempts || null);
           }
           throw new Error(t.wrongPass);
         }
