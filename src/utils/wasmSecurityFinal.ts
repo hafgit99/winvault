@@ -227,8 +227,8 @@ class WASMSecurityManager {
         password: password,
         salt: salt,
         parallelism: 1,
-        iterations: 2,
-        memorySize: 47104, // 46 MiB
+        iterations: 3,
+        memorySize: 65536, // 64 MiB
         hashLength: 32,
         outputType: 'hex'
       });

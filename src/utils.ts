@@ -199,7 +199,7 @@ export const TRANSLATIONS = {
     confirm: "Onayla",
     cancel: "İptal",
     disable: "Devre Dışı Bırak",
-    wordKey: "16 Kelimelik Anahtar",
+    wordKey: "24 Kelimelik Anahtar",
     createWords: "Kelimeleri Oluştur",
     activate: "Aktifleştir",
     licenseStatus: "Lisans Durumu",
@@ -246,7 +246,7 @@ export const TRANSLATIONS = {
     privacyPolicy: "Gizlilik Politikası",
     privacyTitle: "Gizlilik Politikası ve Veri Güvenliği",
     privacyDesc: "WinVault, verilerinizi nasıl korur ve kullanır?",
-    gdprText: "GİZLİLİK POLİTİKASI VE VERİ GÜVENLIĞI\n\nWinVault, 'Gizlilik Odaklı Tasarım' (Privacy by Design) ilkesiyle geliştirilmiştir.\n\n1. VERİ SAHİPLİĞİ\nTüm verileriniz (şifreler, notlar, dosyalar, ödeme kartları) sadece sizin cihazınızda yerel olarak (IndexedDB) saklanır. Hiçbir sunucuya, bulut depolama hizmetine veya üçüncü şahıslara gönderilmez. Veriler tamamen sizin kontrolünüz altındadır.\n\n2. ŞİFRELEME VE GÜVENLIK\n- Verileriniz AES-256 GCM algoritması ile şifrelenir (256-bit şifreleme anahtarı)\n- Ana şifreniz Argon2id fonksiyonuyla hash'lenir (32 iterasyon, 1MB bellek, GPU-dirençli)\n- Her şifreleme işlemi için rastgele 16-byte salt ve 12-byte IV kullanılır\n- Ana şifreniz hiçbir yerde saklanmaz, yalnızca hash'i karşılaştırılır\n- Master key üzerinde işlem tamamlandıktan sonra bellekten silinir\n\n3. VERİ TOPLAMA POLİTİKASI\nWinVault, aşağıdakileri TOPLAMAZ:\n- Kullanım istatistiği veya analitik veriler\n- Telemetri veya crash raporları\n- Kişisel tanıtıcı bilgiler (KVKK Madde 3)\n- Konum, tarama geçmişi, cihaz bilgileri\n- E-posta adresi veya diğer kişisel veriler\n\n4. PANO (CLIPBOARD) GÜVENLİĞİ\n- Şifreler panoya kopyalandığında, 5 saniye sonra otomatik silinir\n- Diğer uygulamalar panoya erişemez (Electron context isolation)\n\n5. EKRAN YAKALAMA KORUNMASI\n- Uygulama boş ekranda gösterilir, içerik yüklenene kadar\n- Screenshot ve recording başlangıç aşamasında engellenir\n\n6. GDPR HAKLARINIZ (AB Genel Veri Koruma Yönetmeliği)\n- Veri Erişimi: 'Dışa Aktar' ile tüm verilerinizi indirebilirsiniz\n- Veri Taşınabilirliği: Veriler CSV/JSON formatında dışa aktarılabilir\n- Veri Silinmesi: 'Verileri Sil' ile tüm verileriniz kalıcı olarak silinir\n- Silinen veriler kurtarılamaz. Backup'tan yüklemediğiniz sürece geri gelmez\n\n7. KVK KANUNU UYUMLULUĞU (Türkiye)\nWinVault, Kişisel Verilerin Korunması Kanunu (KVKK) ile uyumludur:\n- Aydınlatılmış rıza: Bu politikayı okudunuz\n- Meşru Menfaat: Güvenlik ve şifre yönetimi\n- Veri Minimizasyonu: Sadece gerekli veriler toplanır\n- Depolama Sınırlaması: Veriler cihazda yerel saklanır\n- Kullanıcı Haklarında: Veri Sorumlusu olarak siz kontrolü elinde tutarsınız\n\n8. YASAL KÜPÜNETİ (Malicious Software Directive)\nWinVault hiçbir zararlı yazılım, rootkit, spyware veya adware içermez.\n\n9. AÇIK KAYNAK VE DENETIM\nWinVault'un güvenlik özellikleri bağımsız tarafından denetlenebilir.\n\n10. DEĞİŞİKLİKLER\nBu politika değişebilir. Güncellemeler uygulamada bildirilecektir.\n\n11. İLETİŞİM\nGizlilik ve destek hakkında sorularınız varsa, uygulamadaki Ayarlar > Destek bölümünden bizimle iletişime geçebilirsiniz.",
+    gdprText: "GİZLİLİK POLİTİKASI VE VERİ GÜVENLIĞI\n\nWinVault, 'Gizlilik Odaklı Tasarım' (Privacy by Design) ilkesiyle geliştirilmiştir.\n\n1. VERİ SAHİPLİĞİ\nTüm verileriniz (şifreler, notlar, dosyalar, ödeme kartları) sadece sizin cihazınızda yerel olarak (IndexedDB) saklanır. Hiçbir sunucuya, bulut depolama hizmetine veya üçüncü şahıslara gönderilmez. Veriler tamamen sizin kontrolünüz altındadır.\n\n2. ŞİFRELEME VE GÜVENLIK\n- Verileriniz AES-256 GCM algoritması ile şifrelenir (256-bit şifreleme anahtarı)\n- Ana şifreniz Argon2id fonksiyonuyla hash'lenir (3 iterasyon, 64MB bellek, GPU-dirençli)\n- AES anahtar türetimi için PBKDF2 (600,000 iterasyon) kullanılır\n- Her şifreleme işlemi için rastgele 16-byte salt ve 12-byte IV kullanılır\n- Ana şifreniz hiçbir yerde saklanmaz, yalnızca hash'i karşılaştırılır\n- Master key üzerinde işlem tamamlandıktan sonra bellekten silinir\n\n3. VERİ TOPLAMA POLİTİKASI\nWinVault, aşağıdakileri TOPLAMAZ:\n- Kullanım istatistiği veya analitik veriler\n- Telemetri veya crash raporları\n- Kişisel tanıtıcı bilgiler (KVKK Madde 3)\n- Konum, tarama geçmişi, cihaz bilgileri\n- E-posta adresi veya diğer kişisel veriler\n\n4. PANO (CLIPBOARD) GÜVENLİĞİ\n- Şifreler panoya kopyalandığında, 5 saniye sonra otomatik silinir\n- Diğer uygulamalar panoya erişemez (Electron context isolation)\n\n5. EKRAN YAKALAMA KORUNMASI\n- Uygulama boş ekranda gösterilir, içerik yüklenene kadar\n- Screenshot ve recording başlangıç aşamasında engellenir\n\n6. GDPR HAKLARINIZ (AB Genel Veri Koruma Yönetmeliği)\n- Veri Erişimi: 'Dışa Aktar' ile tüm verilerinizi indirebilirsiniz\n- Veri Taşınabilirliği: Veriler CSV/JSON formatında dışa aktarılabilir\n- Veri Silinmesi: 'Verileri Sil' ile tüm verileriniz kalıcı olarak silinir\n- Silinen veriler kurtarılamaz. Backup'tan yüklemediğiniz sürece geri gelmez\n\n7. KVK KANUNU UYUMLULUĞU (Türkiye)\nWinVault, Kişisel Verilerin Korunması Kanunu (KVKK) ile uyumludur:\n- Aydınlatılmış rıza: Bu politikayı okudunuz\n- Meşru Menfaat: Güvenlik ve şifre yönetimi\n- Veri Minimizasyonu: Sadece gerekli veriler toplanır\n- Depolama Sınırlaması: Veriler cihazda yerel saklanır\n- Kullanıcı Haklarında: Veri Sorumlusu olarak siz kontrolü elinde tutarsınız\n\n8. YASAL KÜPÜNETİ (Malicious Software Directive)\nWinVault hiçbir zararlı yazılım, rootkit, spyware veya adware içermez.\n\n9. AÇIK KAYNAK VE DENETIM\nWinVault'un güvenlik özellikleri bağımsız tarafından denetlenebilir.\n\n10. DEĞİŞİKLİKLER\nBu politika değişebilir. Güncellemeler uygulamada bildirilecektir.\n\n11. İLETİŞİM\nGizlilik ve destek hakkında sorularınız varsa, uygulamadaki Ayarlar > Destek bölümünden bizimle iletişime geçebilirsiniz.",
 
     // Support
     support: "Destek",
@@ -508,7 +508,7 @@ export const TRANSLATIONS = {
     confirm: "Confirm",
     cancel: "Cancel",
     disable: "Disable",
-    wordKey: "16-Word Key",
+    wordKey: "24-Word Key",
     createWords: "Generate Words",
     activate: "Activate",
     licenseStatus: "License Status",
@@ -555,7 +555,7 @@ export const TRANSLATIONS = {
     privacyPolicy: "Privacy Policy",
     privacyTitle: "Privacy Policy & Data Security",
     privacyDesc: "How does WinVault protect and use your data?",
-    gdprText: "PRIVACY POLICY AND DATA SECURITY\n\nWinVault is developed with 'Privacy by Design' principles.\n\n1. DATA OWNERSHIP\nAll your data (passwords, notes, files, payment cards) is stored locally on your device (IndexedDB) only. It is never sent to any server, cloud storage service, or third parties. Your data remains completely under your control.\n\n2. ENCRYPTION AND SECURITY\n- Your data is encrypted using AES-256 GCM algorithm (256-bit encryption key)\n- Your master password is hashed using Argon2id function (32 iterations, 1MB memory, GPU-resistant)\n- Each encryption uses random 16-byte salt and 12-byte IV\n- Your master password is never stored, only its hash is compared\n- Master key is deleted from memory after processing\n\n3. DATA COLLECTION POLICY\nWinVault DOES NOT collect:\n- Usage statistics or analytics data\n- Telemetry or crash reports\n- Personal identifiers (GDPR Article 4)\n- Location, browsing history, or device information\n- Email addresses or other personal data\n\n4. CLIPBOARD SECURITY\n- When passwords are copied to clipboard, they are automatically deleted after 5 seconds\n- Other applications cannot access your clipboard (Electron context isolation)\n\n5. SCREEN CAPTURE PROTECTION\n- Application shows blank screen until content loads\n- Screenshot and recording are blocked during startup\n\n6. YOUR GDPR RIGHTS (EU General Data Protection Regulation)\n- Right to Access: Export all your data using 'Export Data'\n- Right to Data Portability: Data can be exported in CSV/JSON format\n- Right to Erasure: Permanently delete all data using 'Delete Data'\n- Deleted data cannot be recovered unless restored from backup\n\n7. KVKK COMPLIANCE (Turkish Personal Data Protection Law)\nWinVault complies with KVKK:\n- Informed Consent: You have read this policy\n- Legitimate Interest: Password management and security\n- Data Minimization: Only necessary data is collected\n- Storage Limitation: Data is stored locally on device\n- User Rights: You maintain control as Data Controller\n\n8. MALWARE PROTECTION\nWinVault contains no malicious software, rootkits, spyware, or adware.\n\n9. OPEN SOURCE AND AUDIT\nWinVault's security features can be independently audited.\n\n10. POLICY CHANGES\nThis policy may change. Updates will be notified in the application.\n\n11. CONTACT\nFor privacy and support questions, use Settings > Support to contact us.",
+    gdprText: "PRIVACY POLICY AND DATA SECURITY\n\nWinVault is developed with 'Privacy by Design' principles.\n\n1. DATA OWNERSHIP\nAll your data (passwords, notes, files, payment cards) is stored locally on your device (IndexedDB) only. It is never sent to any server, cloud storage service, or third parties. Your data remains completely under your control.\n\n2. ENCRYPTION AND SECURITY\n- Your data is encrypted using AES-256 GCM algorithm (256-bit encryption key)\n- Your master password is hashed using Argon2id function (3 iterasyon, 64MB memory, GPU-resistant)\n- PBKDF2 (600,000 iterations) is used for AES key derivation\n- Each encryption uses random 16-byte salt and 12-byte IV\n- Your master password is never stored, only its hash is compared\n- Master key is deleted from memory after processing\n\n3. DATA COLLECTION POLICY\nWinVault DOES NOT collect:\n- Usage statistics or analytics data\n- Telemetry or crash reports\n- Personal identifiers (GDPR Article 4)\n- Location, browsing history, or device information\n- Email addresses or other personal data\n\n4. CLIPBOARD SECURITY\n- When passwords are copied to clipboard, they are automatically deleted after 5 seconds\n- Other applications cannot access your clipboard (Electron context isolation)\n\n5. SCREEN CAPTURE PROTECTION\n- Application shows blank screen until content loads\n- Screenshot and recording are blocked during startup\n\n6. YOUR GDPR RIGHTS (EU General Data Protection Regulation)\n- Right to Access: Export all your data using 'Export Data'\n- Right to Data Portability: Data can be exported in CSV/JSON format\n- Right to Erasure: Permanently delete all data using 'Delete Data'\n- Deleted data cannot be recovered unless restored from backup\n\n7. KVKK COMPLIANCE (Turkish Personal Data Protection Law)\nWinVault complies with KVKK:\n- Informed Consent: You have read this policy\n- Legitimate Interest: Password management and security\n- Data Minimization: Only necessary data is collected\n- Storage Limitation: Data is stored locally on device\n- User Rights: You maintain control as Data Controller\n\n8. MALWARE PROTECTION\nWinVault contains no malicious software, rootkits, spyware, or adware.\n\n9. OPEN SOURCE AND AUDIT\nWinVault's security features can be independently audited.\n\n10. POLICY CHANGES\nThis policy may change. Updates will be notified in the application.\n\n11. CONTACT\nFor privacy and support questions, use Settings > Support to contact us.",
 
     // Support
     support: "Support",
@@ -726,23 +726,38 @@ export const getStoredSalt = async (): Promise<Uint8Array | null> => {
   return saltBytes ? new Uint8Array(saltBytes) : null;
 };
 
-// Argon2id Hash Function (SECURE - Uses random salt)
+// Argon2id Hash Function (SECURE - Adaptive parameters based on Hardware)
 export const hashPassword = async (password: string, providedSalt?: Uint8Array): Promise<{ hash: string; salt: Uint8Array }> => {
-  // SECURITY IMPROVEMENT: Use random salt per user instead of fixed salt
-  // This prevents rainbow table attacks and ensures each user has unique hash
   const salt = providedSalt || generateSalt();
 
-  // Store salt if this is a new hash generation
   if (!providedSalt) {
     await storeSalt(salt);
+  }
+
+  // --- ADAPTIVE HARDWARE DETECTION ---
+  // Default: 64MB / 3 Iterations (Safe Standard)
+  let memory = 65536;
+  let iterations = 3;
+
+  // Detect Hardware (CPU Cores)
+  const cores = navigator.hardwareConcurrency || 4;
+
+  if (cores >= 8) {
+    // High-End PC: Increase memory to 128MB or iterations to 4
+    memory = 131072; // 128 MiB
+    iterations = 4;
+  } else if (cores <= 2) {
+    // Low-End Device: Downscale slightly to prevent crash/freeze but keep security
+    memory = 32768; // 32 MiB
+    iterations = 3;
   }
 
   const hash = await argon2id({
     password,
     salt,
     parallelism: 1,
-    iterations: 64, // Increased iterations for better security
-    memorySize: 2048, // Increased to 2MB for better GPU resistance
+    iterations: iterations,
+    memorySize: memory,
     hashLength: 32,
     outputType: 'hex',
   });
@@ -803,7 +818,7 @@ const deriveKey = async (password: string, salt: Uint8Array): Promise<CryptoKey>
     {
       name: "PBKDF2",
       salt: salt as any, // Cast to any to avoid TS2769
-      iterations: 100000,
+      iterations: 600000, // Modern standard (OWASP 2023)
       hash: "SHA-256"
     },
     keyMaterial,
@@ -899,11 +914,11 @@ export const getTOTPUri = (secret: string): string => {
   return totp.toString();
 };
 
-// Generate 16 Random Words
+// Generate 24 Random Words (BIP39 Standard)
 export const generateRecoveryWords = (): string[] => {
   const words: string[] = [];
   const list = [...WORD_LIST_PASSPHRASE]; // Reuse passphrase list
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 24; i++) {
     const randomIndex = Math.floor(Math.random() * list.length);
     words.push(list[randomIndex]);
   }

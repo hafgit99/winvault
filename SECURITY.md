@@ -22,8 +22,8 @@ WinVault is designed with a "Zero-Knowledge" and "Defense-in-Depth" philosophy.
 ### 1. Encryption & Key Derivation
 - **Algorithm:** AES-256-GCM is used for all data encryption.
 - **Key Derivation:** Master password is strengthened using **Argon2id** (v1.3) running in WebAssembly (WASM).
-  - Memory: 47 MiB (approx)
-  - Iterations: 2
+  - Memory: 64 MiB
+  - Iterations: 3
   - Parallelism: 1
   - Salt Length: 16-32 bytes
 

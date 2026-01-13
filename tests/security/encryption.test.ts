@@ -9,10 +9,10 @@ describe('Encryption Primitive Tests', () => {
         expect(buf.some(b => b !== 0)).toBe(true);
     });
 
-    it('should implement PBKDF2 with 100,000 iterations', () => {
+    it('should implement PBKDF2 with 600,000 iterations', () => {
         const password = 'test-password';
         const salt = crypto.randomBytes(16);
-        const iterations = 100000;
+        const iterations = 600000;
         const keyLen = 32;
 
         const key = crypto.pbkdf2Sync(password, salt, iterations, keyLen, 'sha256');

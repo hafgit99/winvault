@@ -84,9 +84,10 @@ const MasterLogin: React.FC<MasterLoginProps> = ({ onUnlock, onReset, isDefaultP
 
   useEffect(() => {
     if (step === LoginStep.WORD_AUTH) {
-      const idx1 = Math.floor(Math.random() * 16);
-      let idx2 = Math.floor(Math.random() * 16);
-      while (idx2 === idx1) idx2 = Math.floor(Math.random() * 16);
+      const wordCount = securityConfig.recoveryWords?.length || 24;
+      const idx1 = Math.floor(Math.random() * wordCount);
+      let idx2 = Math.floor(Math.random() * wordCount);
+      while (idx2 === idx1) idx2 = Math.floor(Math.random() * wordCount);
       setWordIndices([idx1, idx2]);
     }
   }, [step]);
@@ -419,11 +420,31 @@ const MasterLogin: React.FC<MasterLoginProps> = ({ onUnlock, onReset, isDefaultP
             <button
               type="submit"
               disabled={loading || !inputVal || lockoutInfo?.locked}
-              className="absolute right-1.5 top-1.5 bottom-1.5 aspect-square bg-blue-600 hover:bg-blue-500 disabled:bg-slate-400 disabled:cursor-not-allowed rounded-lg flex items-center justify-center text-white transition-all disabled:opacity-50 disabled:scale-100"
+              className="absolute right-1.5 top-1.5 bottom-1.5 aspect-square bg-blue-600 hover:bg-blue-500 disabled:bg-slate-400 disabled:cursor-not-allowed rounded-lg flex items-center justify-center text-white transition-all disabled:opacity-50 disabled:scale-100 group-hover:scale-105 active:scale-95"
             >
-              {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <ArrowRight className="w-4 h-4" />}
+              {loading ? (
+                <div className="relative w-5 h-5">
+                  <div className="absolute inset-0 border-2 border-white/20 rounded-full"></div>
+                  <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                <ArrowRight className="w-4 h-4" />
+              )}
             </button>
           </div>
+
+          {loading && (
+            <div className="mt-4 flex flex-col items-center">
+              <span className="text-[10px] uppercase font-bold text-blue-500 tracking-[0.2em] animate-pulse">
+                {lang === 'tr' ? 'GÜVENLİK İŞLENİYOR...' : 'PROCESSING SECURITY...'}
+              </span>
+              <div className="flex gap-1.5 mt-2">
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></div>
+              </div>
+            </div>
+          )}
 
           {step === LoginStep.PASSWORD && securityConfig.isBiometricEnabled && isBiometrySupported && (
             <div className="flex flex-col items-center mt-6 animate-fade-in">
