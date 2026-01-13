@@ -1,0 +1,43 @@
+﻿SON KULLANICI LİSANS SÖZLEŞMESİ (EULA)
+
+LÜTFEN BU YAZILIMI KURMADAN VEYA KULLANMADAN ÖNCE BU SÖZLEŞMEYİ DİKKATLİCE OKUYUNUZ.
+
+1. TARAFLAR
+Bu sözleşme, WinVault yazılımının ("Yazılım") sahibi ile Yazılımı kuran veya kullanan birey veya kurum ("Kullanıcı") arasındadır.
+
+2. LİSANS VERİLMESİ
+Kullanıcıya, Yazılımı kişisel veya ticari (PRO lisans varsa) amaçlarla kullanması için münhasır olmayan, devredilemez bir lisans verilir.
+
+3. VERİ GÜVENLİĞİ VE KULLANICI SORUMLULUKLARI
+a. Yerel Depolama: WinVault, verileri yalnızca Kullanıcının cihazında yerel olarak saklar. Herhangi bir bulut sunucusuna veri göndermez.
+b. Ana Şifre: "Ana Şifre"nizi (Master Password) ve "Kurtarma Kelimeleri"nizi saklamak tamamen ve münhasıran Kullanıcının sorumluluğundadır. Bu şifrelerin kaybedilmesi veya unutulması durumunda şifreli verilere erişim teknik olarak imkansızdır ve Yazılım sahibi verileri kurtaramaz.
+c. Yedekleme: Veri kaybını, donanım arızasını veya yazılım hatalarını önlemek için düzenli yedekleme (Dışa Aktarma) yapmak Kullanıcının sorumluluğundadır.
+
+4. SORUMLULUK REDDİ (AS-IS)
+Yazılım, "OLDUĞU GİBİ" sunulmaktadır. Yazılım sahibi, Yazılımın hatasız olduğunu, kesintisiz çalışacağını veya belirli bir amaca uygunluğunu garanti etmez. Yazılımın kullanımından veya kullanılamamasından doğabilecek veri kaybı, iş kaybı, kar kaybı veya donanım hasarları dahil ancak bunlarla sınırlı olmamak üzere hiçbir doğrudan veya dolaylı zarardan Yazılım sahibi sorumlu tutulamaz.
+
+5. KABUL
+"Kabul Ediyorum" butonuna tıklayarak veya Yazılımı kurarak, bu sözleşmenin tüm hükümlerini okuduğunuzu, anladığınızı ve kabul ettiğinizi beyan edersiniz.
+
+-----------------------------------------------------------------------
+
+END USER LICENSE AGREEMENT (EULA)
+
+PLEASE READ THIS AGREEMENT CAREFULLY BEFORE INSTALLING OR USING THIS SOFTWARE.
+
+1. PARTIES
+This agreement is between the owner of the WinVault software ("Software") and the individual or entity installing or using the Software ("User").
+
+2. GRANT OF LICENSE
+The User is granted a non-exclusive, non-transferable license to use the Software for personal or commercial (if PRO license is obtained) purposes.
+
+3. DATA SECURITY AND USER RESPONSIBILITIES
+a. Local Storage: WinVault stores data locally on the User's device only. It does not send data to any cloud server.
+b. Master Password: Keeping your "Master Password" and "Recovery Words" safe is the sole and exclusive responsibility of the User. If these are lost or forgotten, access to encrypted data is technically impossible, and the Software owner cannot recover the data.
+c. Backup: It is the User's responsibility to perform regular backups (Export) to prevent data loss due to hardware failure or software errors.
+
+4. DISCLAIMER (AS-IS)
+The Software is provided "AS IS". The Software owner does not guarantee that the Software is error-free, will operate without interruption, or is suitable for a particular purpose. The Software owner cannot be held liable for any direct or indirect damages, including but not limited to data loss, business loss, profit loss, or hardware damage arising from the use or inability to use the Software.
+
+5. ACCEPTANCE
+By clicking the "I Agree" button or installing the Software, you declare that you have read, understood, and accepted all provisions of this agreement.

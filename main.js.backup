@@ -1,0 +1,767 @@
+const { app, BrowserWindow, ipcMain, globalShortcut, dialog, safeStorage } = require('electron');
+const path = require('path');
+const { exec } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+const crypto = require('crypto');
+
+let mainWindow;
+
+// Helper: Get Active Window Title (Windows only for now)
+const getActiveWindowTitle = () => {
+  return new Promise((resolve, reject) => {
+    const psScript = `
+      Add-Type @"
+        using System;
+        using System.Runtime.InteropServices;
+        public class Win32 {
+          [DllImport("user32.dll")]
+          public static extern IntPtr GetForegroundWindow();
+          [DllImport("user32.dll")]
+          public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count);
+        }
+      "@
+      $hwnd = [Win32]::GetForegroundWindow()
+      $sb = [System.Text.StringBuilder]::new(256)
+      [void][Win32]::GetWindowText($hwnd, $sb, 256)
+      $sb.ToString()
+    `;
+
+    // Using powershell to execute
+    const command = `powershell -NoProfile -ExecutionPolicy Bypass -Command "${psScript.replace(/"/g, '\\"')}"`;
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Title Error:', error);
+        resolve('');
+        return;
+      }
+      resolve(stdout.trim());
+    });
+  });
+};
+
+// Helper: Send Keys via VBScript (More reliable for mixed characters than raw PS SendKeys)
+const sendKeys = (username, password) => {
+  // Escape special characters for SendKeys: + ^ % ~ ( ) { } [ ]
+  // VBScript SendKeys special chars: + ^ % ~ ( ) { } [ ]
+  const escape = (str) => {
+    if (!str) return '';
+    return str.replace(/([+^%~(){}[\]])/g, "{$1}");
+  };
+
+  const userEsc = escape(username);
+  const passEsc = escape(password);
+
+  const vbsContent = `
+    Set WshShell = WScript.CreateObject("WScript.Shell")
+    WScript.Sleep 500
+    WshShell.SendKeys "${userEsc}"
+    WScript.Sleep 300
+    WshShell.SendKeys "{TAB}"
+    WScript.Sleep 300
+    WshShell.SendKeys "${passEsc}"
+    WScript.Sleep 300
+    WshShell.SendKeys "{ENTER}"
+  `;
+
+  const tempPath = path.join(os.tmpdir(), `autotype_${Date.now()}.vbs`);
+  fs.writeFileSync(tempPath, vbsContent);
+
+  exec(`cscript //Nologo "${tempPath}"`, (err) => {
+    if (err) console.error("AutoType Error:", err);
+    // Cleanup
+  });
+};
+
+// Biometric Helpers (Windows Hello via PowerShell)
+const checkBiometryAvailability = () => {
+  return new Promise((resolve) => {
+    const psScript = `
+      Add-Type -AssemblyName System.Runtime.WindowsRuntime
+      $asb = [System.Runtime.InteropServices.WindowsRuntime.AsyncInfo]
+      [Windows.Security.Credentials.UI.UserConsentVerifier, Windows.Security.Credentials.UI, ContentType=WindowsRuntime] | Out-Null
+      $res = [Windows.Security.Credentials.UI.UserConsentVerifier]::CheckAvailabilityAsync().GetResults()
+      $res -eq "Available"
+    `;
+    const command = `powershell -NoProfile -ExecutionPolicy Bypass -Command "${psScript.replace(/"/g, '\\"')}"`;
+    exec(command, (error, stdout) => {
+      resolve(stdout.trim().toLowerCase() === 'true');
+    });
+  });
+};
+
+const promptBiometry = (reason) => {
+  return new Promise((resolve) => {
+    const psScript = `
+      Add-Type -AssemblyName System.Runtime.WindowsRuntime
+      [Windows.Security.Credentials.UI.UserConsentVerifier, Windows.Security.Credentials.UI, ContentType=WindowsRuntime] | Out-Null
+      $operation = [Windows.Security.Credentials.UI.UserConsentVerifier]::RequestVerificationAsync("${reason}")
+      $result = $operation.GetResults()
+      $result -eq "Verified"
+    `;
+    const command = `powershell -NoProfile -ExecutionPolicy Bypass -Command "${psScript.replace(/"/g, '\\"')}"`;
+    exec(command, (error, stdout) => {
+      resolve(stdout.trim().toLowerCase() === 'true');
+    });
+  });
+};
+
+function createWindow() {
+  // Geliştirme ortamında (isPackaged false ise) public klasöründen, 
+  // üretimde (build sonrası) build klasöründen ikonu al.
+  const isDev = !app.isPackaged;
+  const iconPath = isDev
+    ? path.join(__dirname, 'public/favicon.ico')
+    : path.join(__dirname, 'build/favicon.ico');
+
+  mainWindow = new BrowserWindow({
+    width: 1000,
+    height: 700,
+    minWidth: 360,
+    minHeight: 500,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      devTools: isDev
+    },
+    autoHideMenuBar: true,
+    backgroundColor: '#0f172a',
+    title: 'WinVault',
+    icon: iconPath,
+    show: false
+  });
+
+  // Security
+  mainWindow.webContents.on('preload-error', (event, preloadPath, error) => {
+    console.error(`Unable to load preload ${preloadPath}: ${error.message}`);
+  });
+
+  const isDevelopment = process.env.ELECTRON_START_URL;
+  const startUrl = isDevelopment
+    ? process.env.ELECTRON_START_URL
+    : `file://${path.join(__dirname, 'build/index.html')}`;
+
+  mainWindow.loadURL(startUrl);
+
+  if (isDevelopment) {
+    mainWindow.webContents.openDevTools();
+  }
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
+
+  // Global Panic: Ctrl+Shift+Space 
+  globalShortcut.register('CommandOrControl+Shift+Space', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+      mainWindow.webContents.send('global-shortcut-triggered');
+    }
+  });
+
+  // Auto-Type: Ctrl+Alt+A
+  globalShortcut.register('CommandOrControl+Alt+A', async () => {
+    console.log("Auto-Type Triggered");
+    try {
+      const title = await getActiveWindowTitle();
+      console.log("Active Window:", title);
+      // Ignore if WinVault itself is active
+      if (title.includes("WinVault")) {
+        // Maybe just focus?
+        return;
+      }
+
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('auto-type-request', title);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  });
+
+
+}
+
+app.whenReady().then(() => {
+  createWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
+
+// --- IPC LISTENERS ---
+
+ipcMain.on('set-mini-mode', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    win.setSize(380, 650, true); // Telefon boyutu
+    win.setAlwaysOnTop(true, 'floating'); // Her zaman üstte
+  }
+});
+
+ipcMain.on('set-normal-mode', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    win.setSize(1000, 700, true); // Normal boyut
+    win.setAlwaysOnTop(false);
+    win.center();
+  }
+});
+
+ipcMain.on('panic-action', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    win.minimize();
+  }
+});
+
+ipcMain.on('perform-auto-type', (event, { username, password }) => {
+  sendKeys(username, password);
+});
+
+ipcMain.handle('select-backup-folder', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory']
+  });
+  if (result.canceled) return null;
+  return result.filePaths[0];
+});
+
+ipcMain.handle('save-backup-file', async (event, filePath, content) => {
+  try {
+    fs.writeFileSync(filePath, content, 'utf-8');
+    return true;
+  } catch (e) {
+    console.error("Backup Save Error:", e);
+    return false;
+  }
+});
+
+ipcMain.handle('save-file', async (event, { name, data }) => {
+  if (!mainWindow) return false;
+  const { filePath } = await dialog.showSaveDialog(mainWindow, {
+    defaultPath: name,
+    title: 'Dosyayı Kaydet'
+  });
+
+  if (filePath) {
+    try {
+      let cleanBase64 = data;
+      
+      // Handle different data URL formats: data:mime/type;base64,DATA
+      if (data.includes(',')) {
+        const parts = data.split(',');
+        if (parts.length === 2) {
+          cleanBase64 = parts[1];
+        } else {
+          console.error("Invalid data URL format");
+          return false;
+        }
+      }
+      
+      // Validate base64 data
+      if (!cleanBase64 || cleanBase64.trim() === '') {
+        console.error("Empty base64 data");
+        return false;
+      }
+      
+      fs.writeFileSync(filePath, Buffer.from(cleanBase64, 'base64'));
+      console.log(`File saved successfully: ${filePath}`);
+      return true;
+    } catch (e) {
+      console.error("File Save Error:", e);
+      return false;
+    }
+  }
+  return false;
+});
+
+ipcMain.handle('check-biometry', async () => {
+  return await checkBiometryAvailability();
+});
+
+ipcMain.handle('prompt-biometry', async (event, reason) => {
+  return await promptBiometry(reason);
+});
+
+ipcMain.handle('encrypt-key', async (event, key) => {
+  if (!safeStorage.isEncryptionAvailable()) return null;
+  const buffer = safeStorage.encryptString(key);
+  return buffer.toString('base64');
+});
+
+ipcMain.handle('decrypt-key', async (event, encryptedKey) => {
+  if (!safeStorage.isEncryptionAvailable()) return null;
+  const buffer = Buffer.from(encryptedKey, 'base64');
+  return safeStorage.decryptString(buffer);
+});
+
+// Hardware ID (Motherboard Serial)
+ipcMain.handle('get-device-id', async () => {
+  return new Promise((resolve) => {
+    // First try: Baseboard Serial Number
+    exec('wmic baseboard get serialnumber', (error, stdout) => {
+      let serial = '';
+      if (!error && stdout) {
+        serial = stdout.replace('SerialNumber', '').trim();
+      }
+
+      // Validation: If empty or default string, fallback to CPU ID or UUID
+      if (!serial || serial === 'Default String' || serial.length < 3) {
+        exec('wmic csproduct get uuid', (err2, stdout2) => {
+          if (!err2 && stdout2) {
+            resolve(stdout2.replace('UUID', '').trim());
+          } else {
+            resolve('UNKNOWN-HWID-' + Math.random().toString(36).substring(7));
+          }
+        });
+      } else {
+        resolve(serial);
+      }
+    });
+  });
+});
+
+// --- BROWSER EXTENSION SERVER ---
+const https = require('https');
+const EXT_PORT = 19845;
+
+// Generate self-signed certificate for HTTPS
+const generateSelfSignedCert = () => {
+  const userDataPath = app.getPath('userData');
+  const certPath = path.join(userDataPath, 'server.crt');
+  const keyPath = path.join(userDataPath, 'server.key');
+
+  if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+    return {
+      cert: fs.readFileSync(certPath),
+      key: fs.readFileSync(keyPath)
+    };
+  }
+
+  try {
+    // Generate new self-signed certificate
+    // Note: Standard Node.js crypto doesn't create X509 certificates directly.
+    // For local extension server we generate a persistent keypair.
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+    });
+
+    // In a real scenario, you'd want a real certificate. 
+    // Here we use public key as "cert" to satisfy https structure,
+    // though real browsers will show a security warning.
+    fs.writeFileSync(certPath, publicKey);
+    fs.writeFileSync(keyPath, privateKey);
+
+    return { cert: publicKey, key: privateKey };
+  } catch (err) {
+    console.error("Failed to generate certificate, falling back to null", err);
+    return { cert: null, key: null };
+  }
+};
+  }
+
+  try {
+    // Generate a simple self-signed certificate for local development
+    const { privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      privateKeyEncoding: { 
+        type: 'pkcs8', 
+        format: 'pem' 
+      },
+      publicKeyEncoding: { 
+        type: 'spki', 
+        format: 'pem' 
+      }
+    });
+
+    // Create a simple self-signed certificate
+    const selfSignedCert = `-----BEGIN CERTIFICATE-----
+MIIBkTCB+wIJAMlyFqk69v+9MA0GCSqGSIb3DQEBCwUAMA0xCzAJBgNVBAYTAlVT
+MB4XDTAwMDAwMDAwMDAwMFoXDTAwMDAwMDAwMDAwMFowDTELMAkGA1UEBhMCVVMwgZ8wDQYJ
+KoZIhvcNAQEBBQADgY0AMIGJAoGBAMRf6xLbJFvM2ZzJ+Mn5dA6ZjWl8ZP5g6RQ
+J3b2pJN3qB3jwG8tL2S5eZ1qVL5Yj1XHZj1K7Kbd+ydzKjWGDJK7JcKLnVn4
+N4W8V0HH+bTKg8xLm5FjGJhFHmnGmfCq6pWwZp6WNuYPJkNrLCKg4aYB7iV3MB
+AgMBAAEwDQYJKoZIhvcNAQELBQADgYEAzK8xZzLhC2eM7K5GXkDXfJL8QkGJ3
+V2JRf+P7r9RZjZdWkpYqW9LLNWcX3e7A5YQaD5aFQ6XlW7X3yFq9V0qF8Vq
+B1rJz2NxDnK5KzW4YJyB4J3g6W7Wz8JFZJ2J2LjO8KwE9Z3J2X1J5J3J3J3
+-----END CERTIFICATE-----`;
+
+    fs.writeFileSync(certPath, selfSignedCert);
+    fs.writeFileSync(keyPath, privateKey);
+
+    return { cert: selfSignedCert, key: privateKey };
+  } catch (err) {
+    console.error("Failed to generate certificate, falling back to null", err);
+    // Fallback to HTTP for local development
+    return { cert: null, key: null };
+  }
+};
+  }
+
+  try {
+    // Generate new self-signed certificate
+    // Note: Standard Node.js crypto doesn't create X509 certificates directly.
+    // For local extension server we generate a persistent keypair.
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+    });
+
+    // In a real scenario, you'd want a real certificate. 
+    // Here we use the public key as the cert to satisfy the https structure,
+    // though real browsers will show a security warning.
+    fs.writeFileSync(certPath, publicKey);
+    fs.writeFileSync(keyPath, privateKey);
+
+    return { cert: publicKey, key: privateKey };
+  } catch (err) {
+    console.error("Failed to generate certificate, falling back to null", err);
+    return { cert: null, key: null };
+  }
+};
+
+// Temporarily disable HTTPS for debugging
+const { cert, key } = { cert: null, key: null };
+
+const activeSessions = new Map();
+const rateLimiter = new Map();
+
+const generateSessionToken = () => {
+  return crypto.randomBytes(32).toString('hex');
+};
+
+const rateLimitCheck = (clientIP) => {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000; // 15 minutes
+  const maxRequests = 100;
+
+  if (!rateLimiter.has(clientIP)) {
+    rateLimiter.set(clientIP, { count: 1, resetTime: now + windowMs });
+    return { allowed: true };
+  }
+
+  const client = rateLimiter.get(clientIP);
+  if (now > client.resetTime) {
+    rateLimiter.set(clientIP, { count: 1, resetTime: now + windowMs });
+    return { allowed: true };
+  }
+
+  if (client.count >= maxRequests) {
+    return { allowed: false, waitTime: client.resetTime - now };
+  }
+
+  client.count++;
+  return { allowed: true };
+};
+
+// Use HTTP instead of HTTPS for debugging download issues
+const extServer = (cert && key) ? https.createServer({ cert, key }, (req, res) => { : require('http').createServer((req, res) => {
+  // Enhanced security headers
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Access-Control-Allow-Origin', 'chrome-extension://*'); // Restrict to extensions only
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-WinVault-Token');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+
+  // Rate limiting check
+  const clientIP = req.socket.remoteAddress || req.connection.remoteAddress;
+  const rateLimitResult = rateLimitCheck(clientIP);
+  if (!rateLimitResult.allowed) {
+    res.writeHead(429, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Rate limit exceeded', waitTime: rateLimitResult.waitTime }));
+    return;
+  }
+
+  try {
+    const url = new URL(req.url, `https://${req.headers.host}`);
+
+    if (url.pathname === '/api/session' && req.method === 'POST') {
+      if (!mainWindow || mainWindow.isDestroyed()) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: "WinVault is closed" }));
+        return;
+      }
+
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+        if (body.length > 1024) {
+          req.socket.destroy();
+        }
+      });
+
+      req.on('end', () => {
+        try {
+          const { extensionId } = JSON.parse(body || '{}');
+          if (!extensionId) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: "Extension ID required" }));
+            return;
+          }
+
+          // Generate session token and key
+          const sessionToken = generateSessionToken();
+          const sessionKey = crypto.randomBytes(32);
+
+          // Store session
+          activeSessions.set(sessionToken, {
+            extensionId,
+            key: sessionKey,
+            createdAt: Date.now(),
+            lastUsed: Date.now()
+          });
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            sessionToken,
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour
+          }));
+        } catch (error) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: "Session creation failed" }));
+        }
+      });
+      return;
+    }
+
+    if (url.pathname === '/api/search' && req.method === 'GET') {
+      // Authenticate session
+      const authHeader = req.headers['authorization'];
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: "Authentication required" }));
+        return;
+      }
+
+      const sessionToken = authHeader.substring(7);
+      const session = activeSessions.get(sessionToken);
+
+      if (!session) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: "Invalid session" }));
+        return;
+      }
+
+      // Check session expiration
+      if (Date.now() - session.createdAt > 60 * 60 * 1000) {
+        activeSessions.delete(sessionToken);
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: "Session expired" }));
+        return;
+      }
+
+      const domain = url.searchParams.get('domain');
+      if (!mainWindow || mainWindow.isDestroyed()) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: "WinVault is closed" }));
+        return;
+      }
+
+      console.log(`[Ext] Secure search request for: ${domain}`);
+
+      // Update session last used time
+      session.lastUsed = Date.now();
+
+      // Timeout logic
+      let responded = false;
+      const timeout = setTimeout(() => {
+        if (!responded) {
+          res.writeHead(408, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: "Search Timeout" }));
+          responded = true;
+        }
+      }, 5000);
+
+      // Handle Response from Renderer
+      const responseHandler = (event, results) => {
+        if (responded) return;
+        clearTimeout(timeout);
+        responded = true;
+
+        // Encrypt response with session key
+        const iv = crypto.randomBytes(12);
+        const cipher = crypto.createCipher('aes-256-gcm', session.key);
+        cipher.setAAD(JSON.stringify({ domain, timestamp: Date.now() }));
+
+        let encrypted = cipher.update(JSON.stringify({ results }), 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+
+        const authTag = cipher.getAuthTag();
+
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'X-WinVault-IV': iv.toString('hex'),
+          'X-WinVault-AuthTag': authTag.toString('hex')
+        });
+        res.end(JSON.stringify({
+          data: encrypted,
+          iv: iv.toString('hex'),
+          authTag: authTag.toString('hex')
+        }));
+      };
+
+      // Register one-time listener
+      ipcMain.once('extension-search-response', responseHandler);
+
+      // Ask Renderer
+      mainWindow.webContents.send('extension-search-request', domain);
+      return;
+    }
+
+    if (url.pathname === '/api/save' && req.method === 'POST') {
+      // Authenticate session
+      const authHeader = req.headers['authorization'];
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: "Authentication required" }));
+        return;
+      }
+
+      const sessionToken = authHeader.substring(7);
+      const session = activeSessions.get(sessionToken);
+
+      if (!session) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: "Invalid session" }));
+        return;
+      }
+
+      if (!mainWindow || mainWindow.isDestroyed()) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: "WinVault is closed" }));
+        return;
+      }
+
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+        // basic protection
+        if (body.length > 10 * 1024) {
+          req.socket.destroy();
+        }
+      });
+
+      req.on('end', () => {
+        try {
+          const iv = Buffer.from(req.headers['x-winvault-iv'] || '', 'hex');
+          const authTag = Buffer.from(req.headers['x-winvault-authtag'] || '', 'hex');
+          const encryptedData = Buffer.from(body || '', 'hex');
+
+          if (!iv || !authTag || !encryptedData.length) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: "Missing encryption headers" }));
+            return;
+          }
+
+          // Decrypt payload with session key
+          const decipher = crypto.createDecipher('aes-256-gcm', session.key);
+          decipher.setAAD(JSON.stringify({ timestamp: Date.now() }));
+          decipher.setAuthTag(authTag);
+
+          let decrypted = decipher.update(encryptedData, null, 'utf8');
+          decrypted += decipher.final('utf8');
+
+          const payload = JSON.parse(decrypted);
+          const { domain, username, password } = payload || {};
+
+          if (!domain || !username || !password) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: "Missing fields" }));
+            return;
+          }
+
+          console.log(`[Ext] Secure save request for: ${domain} (${username})`);
+
+          let responded = false;
+          const timeout = setTimeout(() => {
+            if (!responded) {
+              res.writeHead(408, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: "Save Timeout" }));
+              responded = true;
+            }
+          }, 5000);
+
+          const responseHandler = (event, result) => {
+            if (responded) return;
+            clearTimeout(timeout);
+            responded = true;
+
+            // Encrypt response
+            const responseIV = crypto.randomBytes(12);
+            const cipher = crypto.createCipher('aes-256-gcm', session.key);
+            cipher.setAAD(JSON.stringify({ success: true, timestamp: Date.now() }));
+
+            let encryptedResponse = cipher.update(JSON.stringify({ ok: true }), 'utf8', 'hex');
+            encryptedResponse += cipher.final('hex');
+
+            const responseAuthTag = cipher.getAuthTag();
+
+            if (result && result.ok) {
+              res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'X-WinVault-IV': responseIV.toString('hex'),
+                'X-WinVault-AuthTag': responseAuthTag.toString('hex')
+              });
+              res.end(JSON.stringify({
+                data: encryptedResponse,
+                iv: responseIV.toString('hex'),
+                authTag: responseAuthTag.toString('hex')
+              }));
+            } else {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: "Save failed" }));
+            }
+          };
+
+          // Register one-time listener
+          ipcMain.once('extension-save-response', responseHandler);
+
+          // Ask Renderer
+          mainWindow.webContents.send('extension-save-request', payload);
+        } catch (error) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: "Decryption failed" }));
+        }
+      });
+
+      return;
+    }
+
+    res.writeHead(404);
+    res.end("Not Found");
+
+  } catch (e) {
+    console.error("[Ext] Server Error:", e);
+    res.writeHead(500);
+    res.end("Internal Error");
+  }
+});
+
+extServer.listen(EXT_PORT, '127.0.0.1', () => {
+  console.log(`WinVault Extension Server running on 127.0.0.1:${EXT_PORT}`);
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});

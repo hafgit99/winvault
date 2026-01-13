@@ -1,0 +1,5 @@
+{
+  "name": "WinVault - Güvenli Şifre Yöneticisi",
+  "description": "Windows tarzı arayüze sahip, yerel çalışan güvenli şifre saklama ve oluşturma uygulaması.",
+  "requestFramePermissions": []
+}

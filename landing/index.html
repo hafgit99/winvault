@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WinVault - Güvenli Şifre Yöneticisi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-text {
+            background: linear-gradient(to right, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Icons as Components for simplicity
+        const Shield = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>;
+        const Lock = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
+        const Zap = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
+        const Check = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+        const Download = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>;
+        const WifiOff = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="1" x2="23" y1="1" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></svg>;
+
+        const App = () => {
+            return (
+                <div className="min-h-screen flex flex-col">
+                    {/* Header */}
+                    <header className="fixed w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
+                        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                                <div className="p-2 bg-blue-600 rounded-lg">
+                                    <Shield className="text-white w-6 h-6" />
+                                </div>
+                                <span className="text-xl font-bold tracking-tight">WinVault</span>
+                            </div>
+                            <nav className="hidden md:flex space-x-8 text-sm font-medium text-slate-400">
+                                <a href="#features" className="hover:text-white transition-colors">Özellikler</a>
+                                <a href="#security" className="hover:text-white transition-colors">Güvenlik</a>
+                                <a href="#pricing" className="hover:text-white transition-colors">Fiyatlandırma</a>
+                            </nav>
+                            <a href="#" className="bg-white text-slate-900 px-5 py-2.5 rounded-full font-bold text-sm hover:bg-blue-50 transition-colors">
+                                İndir v1.0
+                            </a>
+                        </div>
+                    </header>
+
+                    {/* Hero Section */}
+                    <section className="pt-40 pb-20 px-6 relative overflow-hidden">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none"></div>
+                        <div className="container mx-auto text-center relative z-10">
+                            <div className="inline-flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-full px-4 py-1.5 mb-8">
+                                <span className="flex h-2 w-2 relative">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                </span>
+                                <span className="text-xs font-medium text-slate-300">Yeni: Sürüm 1.0 Yayında</span>
+                            </div>
+                            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
+                                Şifreleriniz Sadece <br/>
+                                <span className="gradient-text">Size Ait Olsun.</span>
+                            </h1>
+                            <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-10">
+                                Bulut yok, sunucu yok. WinVault ile şifreleriniz %100 yerel, AES-256 şifreleme ile bilgisayarınızda saklanır.
+                            </p>
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <button className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-lg flex items-center space-x-2 transition-all shadow-lg shadow-blue-600/20">
+                                    <Download className="w-5 h-5" />
+                                    <span>Windows İçin İndir</span>
+                                </button>
+                                <button className="px-8 py-4 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white rounded-xl font-bold text-lg transition-all">
+                                    Özellikleri İncele
+                                </button>
+                            </div>
+                            
+                            {/* Mockup Placeholder */}
+                            <div className="mt-20 mx-auto max-w-5xl rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur shadow-2xl overflow-hidden relative group">
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10"></div>
+                                <div className="h-12 border-b border-slate-800 bg-slate-900 flex items-center px-4 space-x-2">
+                                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                </div>
+                                <div className="p-10 flex items-center justify-center h-[400px] text-slate-600">
+                                    <div className="text-center">
+                                        <Shield className="w-16 h-16 mx-auto mb-4 text-slate-700" />
+                                        <span className="text-lg">WinVault Uygulama Arayüzü</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Features Grid */}
+                    <section id="features" className="py-20 bg-slate-900">
+                        <div className="container mx-auto px-6">
+                            <div className="text-center mb-16">
+                                <h2 className="text-3xl font-bold mb-4">Neden WinVault?</h2>
+                                <p className="text-slate-400">Güvenliğiniz için tasarlanmış modern özellikler.</p>
+                            </div>
+                            <div className="grid md:grid-cols-3 gap-8">
+                                <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 hover:border-blue-500/50 transition-colors group">
+                                    <div className="w-12 h-12 bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-500 mb-6 group-hover:scale-110 transition-transform">
+                                        <Lock className="w-6 h-6" />
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-3">AES-256 Şifreleme</h3>
+                                    <p className="text-slate-400 leading-relaxed">
+                                        Askeri düzeyde şifreleme standardı. Ana şifreniz olmadan verilerinize kimse erişemez.
+                                    </p>
+                                </div>
+                                <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 hover:border-green-500/50 transition-colors group">
+                                    <div className="w-12 h-12 bg-green-900/20 rounded-xl flex items-center justify-center text-green-500 mb-6 group-hover:scale-110 transition-transform">
+                                        <WifiOff className="w-6 h-6" />
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-3">Tamamen Çevrimdışı</h3>
+                                    <p className="text-slate-400 leading-relaxed">
+                                        İnternet bağlantısı gerektirmez. Verileriniz sunuculara gitmez, sadece cihazınızda kalır.
+                                    </p>
+                                </div>
+                                <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 hover:border-purple-500/50 transition-colors group">
+                                    <div className="w-12 h-12 bg-purple-900/20 rounded-xl flex items-center justify-center text-purple-500 mb-6 group-hover:scale-110 transition-transform">
+                                        <Zap className="w-6 h-6" />
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-3">Hızlı ve Modern</h3>
+                                    <p className="text-slate-400 leading-relaxed">
+                                        Electron altyapısı ile ışık hızında çalışır. Karanlık mod desteği ve modern arayüz.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Pricing */}
+                    <section id="pricing" className="py-20">
+                        <div className="container mx-auto px-6">
+                            <div className="text-center mb-16">
+                                <h2 className="text-3xl font-bold mb-4">Basit Fiyatlandırma</h2>
+                                <p className="text-slate-400">Gizli ücret yok, abonelik yok. Tek seferlik ödeme.</p>
+                            </div>
+                            
+                            <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
+                                {/* Free Plan */}
+                                <div className="p-8 rounded-3xl border border-slate-800 bg-slate-900/50">
+                                    <h3 className="text-xl font-bold text-slate-400 mb-2">Ücretsiz</h3>
+                                    <div className="text-4xl font-bold mb-6">0€</div>
+                                    <ul className="space-y-4 mb-8">
+                                        <li className="flex items-center text-slate-300"><Check className="w-5 h-5 text-green-500 mr-3" /> Sınırsız Şifre</li>
+                                        <li className="flex items-center text-slate-300"><Check className="w-5 h-5 text-green-500 mr-3" /> Güvenli Notlar</li>
+                                        <li className="flex items-center text-slate-300"><Check className="w-5 h-5 text-green-500 mr-3" /> Şifre Üretici</li>
+                                        <li className="flex items-center text-slate-300"><Check className="w-5 h-5 text-green-500 mr-3" /> Yerel Depolama</li>
+                                    </ul>
+                                    <button className="w-full py-3 rounded-xl border border-slate-700 font-bold hover:bg-slate-800 transition-colors">İndir</button>
+                                </div>
+
+                                {/* PRO Plan */}
+                                <div className="p-8 rounded-3xl border border-blue-500/30 bg-blue-900/10 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">ÖNERİLEN</div>
+                                    <h3 className="text-xl font-bold text-blue-400 mb-2">PRO Lisans</h3>
+                                    <div className="text-4xl font-bold mb-1">10€</div>
+                                    <div className="text-sm text-slate-500 mb-6">Tek seferlik ömür boyu lisans</div>
+                                    <ul className="space-y-4 mb-8">
+                                        <li className="flex items-center text-white"><Check className="w-5 h-5 text-blue-500 mr-3" /> <strong>Tüm Ücretsiz Özellikler</strong></li>
+                                        <li className="flex items-center text-white"><Check className="w-5 h-5 text-blue-500 mr-3" /> Şifreli Yedekleme (.winvault)</li>
+                                        <li className="flex items-center text-white"><Check className="w-5 h-5 text-blue-500 mr-3" /> Ticari Kullanım İzni</li>
+                                        <li className="flex items-center text-white"><Check className="w-5 h-5 text-blue-500 mr-3" /> Öncelikli E-posta Desteği</li>
+                                    </ul>
+                                    <button className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors shadow-lg shadow-blue-600/20">Satın Al</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Footer */}
+                    <footer className="py-10 border-t border-slate-900 bg-slate-950 text-center">
+                        <p className="text-slate-600 text-sm">
+                            © 2024 WinVault. Tüm hakları saklıdır. <br/>
+                            <a href="mailto:support@winvault.app" className="hover:text-blue-500 transition-colors">sales@hetech-me.space</a>
+                        </p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

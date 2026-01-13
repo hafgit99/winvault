@@ -1,0 +1,9 @@
+{ 
+    "name": "com.winvault.extension", 
+    "description": "WinVault Secure Password Manager - Native Messaging Host", 
+    "path": "C:\\Users\\hrn21\\OneDrive\\Desktop\\winvault17\\native-host\\winvault-host.bat", 
+    "type": "stdio", 
+    "allowed_origins": [ 
+        "chrome-extension://odpmdhckkelhfihibgjflinfedapaikh/" 
+    ] 
+} 

@@ -1,0 +1,147 @@
+import React, { useMemo, useState } from 'react';
+import { FixedSizeList } from 'react-window';
+import { Star, CreditCard, StickyNote, FileText, Pencil, Trash2, Eye } from 'lucide-react';
+import { Credential, Language } from '../../types';
+import { TRANSLATIONS } from '../../utils';
+import { AttachmentsList } from './VaultHelpers';
+
+interface VaultGridProps {
+    filteredCredentials: Credential[];
+    onToggleFavorite: (id: string) => void;
+    openEditModal: (cred: Credential) => void;
+    onDelete: (id: string) => void;
+    isTrashMode: boolean;
+    onRestore: (id: string) => void;
+    onPermanentDelete: (id: string) => void;
+    faviconCache: Map<string, string>;
+    lang: Language;
+    width: number;
+    height: number;
+    onView?: (id: string) => void;
+}
+
+const VaultCard: React.FC<{
+    cred: Credential;
+    t: any;
+    isTrashMode: boolean;
+    faviconCache: Map<string, string>;
+    onToggleFavorite: (id: string) => void;
+    openEditModal: (cred: Credential) => void;
+    onDelete: (id: string) => void;
+    onView?: (id: string) => void;
+    lang: Language;
+}> = React.memo(({ cred, t, isTrashMode, faviconCache, onToggleFavorite, openEditModal, onDelete, onView, lang }) => {
+    const [imgError, setImgError] = useState(false);
+    const faviconUrl = faviconCache.get(cred.id);
+
+    // Fix 1: Stable icon rendering to prevent shaking/flickering
+    const renderIcon = () => {
+        if (cred.type === 'CARD') return <CreditCard className="w-5 h-5" />;
+        if (cred.type === 'NOTE') return <StickyNote className="w-5 h-5" />;
+        if (cred.type === 'DOCUMENT') return <FileText className="w-5 h-5" />;
+
+        if (!faviconUrl || imgError) {
+            const firstChar = cred.siteName ? cred.siteName.charAt(0).toUpperCase() : '?';
+            return (
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0 select-none">
+                    {firstChar}
+                </div>
+            );
+        }
+
+        return (
+            <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 overflow-hidden flex-shrink-0">
+                <img
+                    src={faviconUrl}
+                    alt=""
+                    className="w-8 h-8 object-contain select-none"
+                    onError={() => setImgError(true)}
+                    loading="lazy"
+                    draggable={false}
+                    style={{ imageRendering: 'crisp-edges' }}
+                />
+            </div>
+        );
+    };
+
+    const iconBgClass =
+        cred.type === 'CARD' ? "bg-blue-500/20 text-blue-400" :
+            cred.type === 'NOTE' ? "bg-amber-500/20 text-amber-500" :
+                cred.type === 'DOCUMENT' ? "bg-indigo-500/20 text-indigo-500" :
+                    "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700";
+
+    // Fix 3: Prevent card clicks by adding pointer-events-none and handling all interactions in buttons
+    return (
+        <div className="w-full h-full rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl border overflow-hidden group bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 select-none pointer-events-none">
+            <div className="flex justify-between items-start relative z-10 h-12">
+                <div className="flex items-center space-x-3 min-w-0 flex-1">
+                    <div className={`w-12 h-12 min-w-[3rem] min-h-[3rem] rounded-xl flex items-center justify-center border border-transparent flex-shrink-0 overflow-hidden ${iconBgClass}`}>
+                        {renderIcon()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <h3 className={`font-bold text-base truncate pr-2 ${cred.type === 'CARD' ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>
+                            {cred.siteName}
+                        </h3>
+                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest truncate">{cred.category}</p>
+                    </div>
+                </div>
+                {!isTrashMode && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onToggleFavorite(cred.id); }}
+                        className={`p-2 rounded-full transition-colors flex-shrink-0 pointer-events-auto`}
+                    >
+                        <Star className={`w-5 h-5 ${cred.isFavorite ? 'fill-current text-yellow-400' : 'text-slate-300 hover:text-yellow-400'}`} />
+                    </button>
+                )}
+            </div>
+
+            <div className="flex-1 mt-6 relative min-h-0">
+                {cred.type === 'CARD' ? (
+                    <div className="font-mono">
+                        <p className="text-lg tracking-[0.2em] mb-1 text-slate-300">**** **** **** {cred.cardNumber?.slice(-4) || '****'}</p>
+                        <div className="flex justify-between items-end mt-4">
+                            <div>
+                                <p className="text-[8px] text-slate-500 uppercase font-black mb-0.5">{t.expiry}</p>
+                                <p className="font-mono text-sm text-slate-400">{cred.expiry || '00/00'}</p>
+                            </div>
+                            <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest truncate max-w-[120px]">{cred.cardHolder || '---'}</p>
+                        </div>
+                    </div>
+                ) : cred.type === 'NOTE' ? (
+                    <div className="relative h-full overflow-hidden">
+                        <p className="text-slate-500 dark:text-slate-400 text-sm line-clamp-3 blur-[5px] select-none">
+                            {cred.notes || t.noContent}
+                        </p>
+                    </div>
+                ) : cred.type === 'DOCUMENT' ? (
+                    <div className="relative">
+                        <p className="text-slate-400 dark:text-slate-500 text-[10px] mb-2 italic truncate">
+                            {cred.attachments?.length || 0} {t.attachments}
+                        </p>
+                        <AttachmentsList files={cred.attachments} lang={lang} />
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">{t.username}</span>
+                            <p className="text-sm font-mono text-slate-600 dark:text-slate-300 truncate">{cred.username || '---'}</p>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">{t.password}</span>
+                            <p className="text-sm font-mono text-blue-600 dark:text-blue-400 font-bold tracking-wider">••••••••</p>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className={`mt-6 pt-4 border-t ${cred.type === 'CARD' ? 'border-slate-800' : 'border-slate-100 dark:border-slate-800'} flex items-center justify-end space-x-1 h-12`}>
+                <button
+                    onClick={(e) => { e.stopPropagation(); onView?.(cred.id); }}
+                    className="p-2 text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border border-transparent hover:border-blue-500/20 pointer-events-auto"
+                    title={t.view}
+                >
+                    <Eye className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={(e) => { e.stopPropagation(); openEditModal(cred); }}
+                    className="p-2 text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-sla

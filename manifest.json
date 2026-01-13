@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "WinVault - Şifre Yöneticisi",
+  "version": "1.1.0",
+  "description": "Yerel çalışan güvenli şifre yöneticisi. Otomatik doldurma ve yakalama özellikli.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "WinVault"
+  }
+}

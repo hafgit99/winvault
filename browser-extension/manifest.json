@@ -1,0 +1,38 @@
+{
+    "manifest_version": 3,
+    "name": "WinVault",
+    "version": "2.0.0",
+    "description": "WinVault - Secure Offline Password Manager",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "nativeMessaging",
+        "storage"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "WinVault",
+        "default_icon": "icons/toolbar.svg"
+    },
+    "icons": {
+        "16": "icons/favicon.ico",
+        "32": "icons/favicon.ico",
+        "48": "icons/favicon.ico",
+        "128": "icons/favicon.ico"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "http://*/*",
+                "https://*/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ]
+}

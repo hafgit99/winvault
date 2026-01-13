@@ -1,0 +1,27 @@
+/* Simple Desktop Grid - 8 Cards Per Row */
+
+@media (min-width: 1024px) {
+  .desktop-container {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .desktop-simple-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 200px);
+    grid-template-rows: 200px;
+    gap: 16px;
+    width: 100%;
+  }
+  
+  .desktop-simple-grid .vault-card {
+    width: 200px !important;
+    height: 200px !important;
+    max-width: 200px !important;
+    max-height: 200px !important;
+    min-width: 200px !important;
+    min-height: 200px !important;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+}
