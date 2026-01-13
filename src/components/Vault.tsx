@@ -120,6 +120,7 @@ const Vault: React.FC<VaultProps> = ({
   }, [credentials, isTrashMode, selectedCategory, filterMode, searchTerm, mode]);
 
   // TOTP Refresh Logic
+  const hasTotp = credentials.some(c => c.totpSecret);
   useEffect(() => {
     const updateCodes = () => {
       const now = Math.floor(Date.now() / 1000);
@@ -140,17 +141,28 @@ const Vault: React.FC<VaultProps> = ({
     updateCodes();
     const interval = setInterval(updateCodes, 1000);
     return () => clearInterval(interval);
-  }, [credentials]);
+  }, [hasTotp]);
 
-  // Favicon Fetcher
+  // Favicon Fetcher - DISABLED for privacy and security (offline password manager should be truly offline)
+  // If you want to re-enable, uncomment the code below and understand the privacy implications
+  /*
   useEffect(() => {
-    credentials.forEach(cred => {
-      if (cred.type === 'LOGIN' && !faviconCache.has(cred.id)) {
-        const domain = cred.siteName.includes('.') ? cred.siteName : `${cred.siteName}.com`;
-        setFaviconCache(prev => new Map(prev).set(cred.id, `https://www.google.com/s2/favicons?sz=64&domain=${domain}`));
-      }
-    });
-  }, [credentials, faviconCache]);
+    const missingIds = credentials.filter(cred =>
+      cred.type === 'LOGIN' && !faviconCache.has(cred.id)
+    );
+
+    if (missingIds.length > 0) {
+      setFaviconCache(prev => {
+        const next = new Map(prev);
+        missingIds.forEach(cred => {
+          const domain = cred.siteName.includes('.') ? cred.siteName : `${cred.siteName}.com`;
+          next.set(cred.id, `https://www.google.com/s2/favicons?sz=64&domain=${domain}`);
+        });
+        return next;
+      });
+    }
+  }, [credentials.length, credentials.map(c => c.id).join(',')]);
+  */
 
   const handleAnalyze = async (id: string, pass: string) => {
     setAnalyzingId(id);
@@ -253,6 +265,8 @@ const Vault: React.FC<VaultProps> = ({
               <div style={{ height, width }}>
                 <VaultList
                   listRef={listRef}
+                  height={height}
+                  width={width}
                   filteredCredentials={filteredCredentials}
                   onCopy={onCopy}
                   onTouch={onTouch}

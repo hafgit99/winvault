@@ -313,11 +313,37 @@ const VaultGrid: React.FC<VaultGridProps> = ({
     isTrashMode, onRestore, onPermanentDelete, faviconCache, lang, onView
 }) => {
     const t = TRANSLATIONS[lang];
+    const [visibleCount, setVisibleCount] = React.useState(40); // Inicial batch
+    const loaderRef = React.useRef<HTMLDivElement>(null);
+
+    // Reset visible count when filters change
+    React.useEffect(() => {
+        setVisibleCount(40);
+    }, [filteredCredentials.length]);
+
+    // Intersection Observer for Infinite Scroll
+    React.useEffect(() => {
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                setVisibleCount(prev => Math.min(prev + 40, filteredCredentials.length));
+            }
+        }, { threshold: 0.1 });
+
+        if (loaderRef.current) {
+            observer.observe(loaderRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [filteredCredentials.length]);
+
+    const visibleItems = React.useMemo(() =>
+        filteredCredentials.slice(0, visibleCount),
+        [filteredCredentials, visibleCount]);
 
     return (
         <div className="w-full h-full overflow-y-auto custom-scrollbar vault-container">
             <div className="desktop-grid">
-                {filteredCredentials.map((cred) => (
+                {visibleItems.map((cred) => (
                     <VaultCard
                         key={cred.id}
                         cred={cred}
@@ -333,6 +359,20 @@ const VaultGrid: React.FC<VaultGridProps> = ({
                     />
                 ))}
             </div>
+
+            {/* Sentinel element for loading more */}
+            {visibleCount < filteredCredentials.length && (
+                <div ref={loaderRef} className="w-full py-10 flex justify-center items-center">
+                    <div className="flex gap-2">
+                        <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                        <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                        <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce"></div>
+                    </div>
+                </div>
+            )}
+
+            {/* Smooth list-end padding */}
+            <div className="h-20 w-full" />
         </div>
     );
 };

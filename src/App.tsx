@@ -143,6 +143,7 @@ const App: React.FC = () => {
         const savedConfig = await dbService.getSecurityConfig();
         if (savedConfig) {
           if (savedConfig.autoLockTimeout === undefined) savedConfig.autoLockTimeout = 300000;
+          if (savedConfig.clipboardTimeout === undefined) savedConfig.clipboardTimeout = 30000;
           setSecurityConfig(savedConfig);
           setIsPro(savedConfig.licenseType === 'PRO');
           setShowLicenseInput(savedConfig.licenseType !== 'PRO');
@@ -435,13 +436,13 @@ const App: React.FC = () => {
       const timer = setTimeout(() => { handleLockWithBackup(); addToast(t.autoLockMsg, 'info'); }, securityConfig.autoLockTimeout);
       setIdleTimer(timer);
     }
-  }, [isLocked, idleTimer, securityConfig.autoLockTimeout, handleLockWithBackup, t.autoLockMsg]);
+  }, [isLocked, idleTimer, securityConfig.autoLockTimeout, handleLockWithBackup]);
 
   useEffect(() => {
     resetIdleTimer();
     window.addEventListener('mousemove', resetIdleTimer); window.addEventListener('keydown', resetIdleTimer);
     return () => { window.removeEventListener('mousemove', resetIdleTimer); window.removeEventListener('keydown', resetIdleTimer); if (idleTimer) clearTimeout(idleTimer); };
-  }, [resetIdleTimer]);
+  }, []);
 
   useEffect(() => {
     if (window.electron) {
@@ -468,7 +469,7 @@ const App: React.FC = () => {
   const copyWithTimeout = useClipboardTimeout({
     onCopy: () => addToast(t.copied),
     onClear: () => addToast(t.clipboardCleared, 'info'),
-    timeout: 5000
+    timeout: securityConfig.clipboardTimeout
   });
 
   const handleCopy = (text: string) => {

@@ -93,7 +93,8 @@ export const useAppStore = create<AppState>((set) => ({
         isWordAuthEnabled: false,
         recoveryWords: [],
         licenseType: 'FREE',
-        autoLockTimeout: 300000
+        autoLockTimeout: 300000,
+        clipboardTimeout: 30000
     },
     isBiometrySupported: false,
     needsSecureSetup: false,

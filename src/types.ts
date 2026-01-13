@@ -99,6 +99,7 @@ export interface SecurityConfig {
   licenseExpiresAt?: string | null;
   licenseDeviceId?: string;
   autoLockTimeout: number; // ms, 0 means never
+  clipboardTimeout?: number; // ms, 0 means never clear clipboard (default: 30000)
   isAutoBackupEnabled?: boolean;
   autoBackupPath?: string; // Absolute path to backup folder
   isBiometricEnabled?: boolean;
