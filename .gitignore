@@ -25,4 +25,9 @@ dist-ssr
 
 nul
 
+# Security - Private keys and license generators (NEVER commit these!)
 *.pem
+private.pem
+public.pem
+generate-keys.js
+license-generator.js
