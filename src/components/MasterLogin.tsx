@@ -145,7 +145,7 @@ const MasterLogin: React.FC<MasterLoginProps> = ({ onUnlock, onReset, isDefaultP
             setInputVal('');
             setShowPassword(false);
           } else {
-            onUnlock(inputVal);
+            await onUnlock(inputVal);
           }
         } else {
           // Record failed attempt and update UI
@@ -165,12 +165,13 @@ const MasterLogin: React.FC<MasterLoginProps> = ({ onUnlock, onReset, isDefaultP
         }
       }
       else if (step === LoginStep.TWO_FACTOR) {
-        if (securityConfig.totpSecret && verifyTOTP(inputVal, securityConfig.totpSecret)) {
+        const cleanedCode = inputVal.trim().replace(/\s/g, '');
+        if (securityConfig.totpSecret && verifyTOTP(cleanedCode, securityConfig.totpSecret)) {
           if (securityConfig.isWordAuthEnabled) {
             setStep(LoginStep.WORD_AUTH);
             setInputVal('');
           } else {
-            onUnlock(tempPassword);
+            await onUnlock(tempPassword);
           }
         } else {
           throw new Error(t.invalidCode);
@@ -183,7 +184,7 @@ const MasterLogin: React.FC<MasterLoginProps> = ({ onUnlock, onReset, isDefaultP
           const expectedWord2 = securityConfig.recoveryWords[wordIndices[1]];
 
           if (inputs[0] === expectedWord1 && inputs[1] === expectedWord2) {
-            onUnlock(tempPassword);
+            await onUnlock(tempPassword);
           } else {
             throw new Error(t.wordsMismatch);
           }
