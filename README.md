@@ -30,9 +30,14 @@ WinVault utilizes military-grade encryption and advanced protection mechanisms:
 - **Modern Dashboard:** Intuitive interface built with React and TailwindCSS.
 - **Vault Management:** Securely store logins, credit cards, identities, and secure notes.
 - **TOTP Authenticator:** Built-in Two-Factor Authentication code generator.
-- **Password Generator:** Customizable, cryptographically strong password generation.
+- **Password Generator:** Customizable, cryptographically strong password generation with entropy scoring.
 - **Data Import/Export:** Seamless migration with encrypted JSON and CSV support.
 - **Biometric Unlock:** Windows Hello and TouchID integration.
+- **CLI Support:** Command-line interface for scripting and automation.
+- **Multi-Language:** Full support for English and Turkish interfaces.
+- **Responsive Layout:** Optimized Mini Mode and Full Mode for different workflows.
+- **Auto-Lock:** Configurable inactivity timeout for enhanced security.
+- **Clipboard Protection:** Automatic clipboard clearing after configurable timeout (default 5 seconds).
 
 ## 🛠️ Getting Started
 
@@ -60,14 +65,29 @@ WinVault utilizes military-grade encryption and advanced protection mechanisms:
 
 ### 🧪 Running Tests
 
-WinVault includes a comprehensive suite of security and functional tests:
+WinVault includes a comprehensive suite of **97 automated tests** covering security, vault operations, and UI functionality:
 
 ```bash
+# Run all tests
 npm test
-# To run specific test suites
+
+# Run specific test categories
+npm test tests/security/    # Security tests (encryption, session, rate limiting)
+npm test tests/vault/       # Vault tests (generator, validation, integrity)
+npm test tests/ui/          # UI tests (auto-lock, clipboard, responsive layout)
+
+# Run a specific test file
 npm test -- rateLimiter.test.ts
-npm test -- integrity.test.ts
+npm test -- generator.test.ts
 ```
+
+#### Test Coverage
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| **Security** | 41 | Encryption, authentication, session management, rate limiting, memory protection |
+| **Vault** | 23 | Password generator, entropy validation, form validation, data integrity |
+| **UI** | 33 | Auto-lock, clipboard timeout, theme persistence, language sync, responsive layout |
 
 ### Building for Production
 
@@ -77,6 +97,28 @@ To create an optimized executable/installer for your OS:
 npm run build
 # This triggers the full build pipeline including Vite and Electron Builder
 ```
+
+### Command Line Interface (CLI)
+
+WinVault includes a CLI for advanced users and automation:
+
+```bash
+# List all vault entries
+winvault-cli list
+
+# Search for entries
+winvault-cli search "google"
+
+# Get specific entry details
+winvault-cli get <entry-id>
+```
+
+## 📋 Version History
+
+- **v2.0.1** - Current stable release with comprehensive test coverage
+- **v2.0.0** - Major release with WASM security core and enhanced encryption
+- **v1.1.x** - Added biometric authentication and WebAuthn support
+- **v1.0.x** - Initial release
 
 ## 🔒 License
 

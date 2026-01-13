@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Globe, CreditCard, StickyNote, FileText, Folder, Calendar, User, Shield, Lock, Plus, Paperclip, Download } from 'lucide-react';
 import { Credential, Category, Language, Attachment, GeneratorSettings } from '../../../types';
 import { TRANSLATIONS, convertFileToBase64, generatePasswordFromSettings, downloadAttachment } from '../../../utils';
+import { validateURL } from '../../../utils/validation';
 
 interface AddEditModalProps {
     editingId: string | null;
@@ -39,6 +40,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
     const [attachmentError, setAttachmentError] = useState('');
     const [newTotpSecret, setNewTotpSecret] = useState('');
     const [newCustomFields, setNewCustomFields] = useState<{ label: string; value: string }[]>([]);
+    const [siteNameError, setSiteNameError] = useState<string | null>(null);
 
     useEffect(() => {
         if (editingId && initialData) {
@@ -137,7 +139,32 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
 
                         {activeTab === 'LOGIN' && (
                             <>
-                                <div><label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 ml-1">{t.siteName}</label><div className="relative"><Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" /><input type="text" required value={newSite} onChange={(e) => setNewSite(e.target.value)} className="w-full pl-12 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl py-3 text-base text-slate-900 dark:text-white focus:border-blue-600 outline-none transition-colors select-text cursor-text" onMouseDown={(e) => e.stopPropagation()} placeholder={t.placeholderSiteName} /></div></div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 ml-1">{t.siteName}</label>
+                                    <div className="relative">
+                                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" />
+                                        <input
+                                            type="text"
+                                            required
+                                            data-testid="site-name-input"
+                                            value={newSite}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setNewSite(val);
+                                                if (val.startsWith('http') || val.startsWith('www.')) {
+                                                    const res = validateURL(val);
+                                                    setSiteNameError(res.isValid ? null : 'Invalid URL format');
+                                                } else {
+                                                    setSiteNameError(null);
+                                                }
+                                            }}
+                                            className={`w-full pl-12 bg-slate-50 dark:bg-slate-950 border ${siteNameError ? 'border-red-500' : 'border-slate-300 dark:border-slate-800'} rounded-xl py-3 text-base text-slate-900 dark:text-white focus:border-blue-600 outline-none transition-colors select-text cursor-text`}
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            placeholder={t.placeholderSiteName}
+                                        />
+                                    </div>
+                                    {siteNameError && <p className="text-xs text-red-500 mt-1 ml-1">{siteNameError}</p>}
+                                </div>
                                 <div><label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 ml-1">{t.username}</label><input type="text" required value={newUsername} onChange={(e) => setNewUsername(e.target.value)} className="w-full px-4 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl py-3 text-base text-slate-900 dark:text-white focus:border-blue-600 outline-none transition-colors select-text cursor-text" onMouseDown={(e) => e.stopPropagation()} placeholder={t.placeholderUsername} /></div>
                                 <div><label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 ml-1">{t.alias}</label><input type="text" value={newAlias} onChange={(e) => setNewAlias(e.target.value)} className="w-full px-4 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl py-3 text-base text-slate-900 dark:text-white focus:border-blue-600 outline-none transition-colors select-text cursor-text" onMouseDown={(e) => e.stopPropagation()} placeholder={t.placeholderAlias} /></div>
                                 <div><label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 ml-1">{t.password}</label><div className="relative"><input type="text" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-4 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl py-3 text-base text-slate-900 dark:text-white focus:border-blue-600 font-mono outline-none transition-colors select-text cursor-text" onMouseDown={(e) => e.stopPropagation()} /><button type="button" onClick={generateRandomForInput} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 px-3 py-1.5 rounded text-blue-600 dark:text-blue-400 transition-colors">{t.random}</button></div></div>

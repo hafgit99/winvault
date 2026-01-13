@@ -24,6 +24,7 @@ import { dbService } from './services/idb';
 import QRCode from 'qrcode';
 import { useAppStore } from './store/useAppStore';
 import { useVaultStore } from './store/useVaultStore';
+import { useClipboardTimeout } from './hooks/useClipboardTimeout';
 
 
 // Statik importlar temizlendi ve utils üzerinden import edildi
@@ -395,11 +396,6 @@ const App: React.FC = () => {
           // Decryption truly failed
         }
       } else {
-        // No data to decrypt, rely solely on hash
-        if (!isValidPassword && !isDuress) {
-          addToast(t.wrongPass, 'error');
-          return;
-        }
         decryptedData = [];
       }
 
@@ -411,6 +407,11 @@ const App: React.FC = () => {
         if (isDuress) addToast(t.duressActive, 'info');
       } else {
         addToast(t.wrongPass, 'error');
+        const input = document.getElementById('master-password-input');
+        if (input) {
+          input.classList.add('animate-shake');
+          setTimeout(() => input.classList.remove('animate-shake'), 500);
+        }
       }
 
     } catch (e) {
@@ -437,9 +438,10 @@ const App: React.FC = () => {
   }, [isLocked, idleTimer, securityConfig.autoLockTimeout, handleLockWithBackup, t.autoLockMsg]);
 
   useEffect(() => {
+    resetIdleTimer();
     window.addEventListener('mousemove', resetIdleTimer); window.addEventListener('keydown', resetIdleTimer);
     return () => { window.removeEventListener('mousemove', resetIdleTimer); window.removeEventListener('keydown', resetIdleTimer); if (idleTimer) clearTimeout(idleTimer); };
-  }, [resetIdleTimer, idleTimer]);
+  }, [resetIdleTimer]);
 
   useEffect(() => {
     if (window.electron) {
@@ -463,9 +465,14 @@ const App: React.FC = () => {
     }
   };
 
+  const copyWithTimeout = useClipboardTimeout({
+    onCopy: () => addToast(t.copied),
+    onClear: () => addToast(t.clipboardCleared, 'info'),
+    timeout: 5000
+  });
+
   const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text); addToast(t.copied);
-    setTimeout(() => { navigator.clipboard.writeText(''); addToast(t.clipboardCleared, 'info'); }, 5000);
+    copyWithTimeout(text);
   };
 
   const handleLicenseInput = (e: React.ChangeEvent<HTMLInputElement>) => { setLicenseKeyInput(e.target.value); };

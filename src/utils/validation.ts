@@ -19,19 +19,19 @@ interface ValidationRules {
 // Common dangerous patterns
 const DANGEROUS_PATTERNS = {
   // XSS patterns
-  xss: /<script[^>]*>.*?<\/script>/gi,
-  // SQL injection patterns
-  sql: /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)/gi,
+  xss: /<script[^>]*>.*?<\/script>/i,
+  // SQL injection patterns (Enhanced to catch 'OR 1=1' and common markers)
+  sql: /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)|([';]\s*--)|(\bOR\b\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?)/i,
   // Command injection patterns
-  command: /[;&|`$(){}[\]]/gi,
+  command: /[;&|`$(){}[\]]/i,
   // Path traversal
-  pathTraversal: /\.\.[\\/]/gi,
+  pathTraversal: /\.\.[\\/]/i,
   // File injection
-  fileInjection: /[<>:"|?*]/gi,
+  fileInjection: /[<>:"|?*]/i,
   // LDAP injection
-  ldap: /[()=,*&|]/gi,
+  ldap: /[()=,*&|]/i,
   // NoSQL injection
-  nosql: /(\$where|\$ne|\$gt|\$lt|\$in|\$nin)/gi
+  nosql: /(\$where|\$ne|\$gt|\$lt|\$in|\$nin)/i
 };
 
 // Input sanitization functions
@@ -129,41 +129,41 @@ export const validateInput = (input: string, rules: ValidationRules): Validation
 };
 
 // Check for injection attacks
-export const checkForInjection = (input: string): { isSafe: boolean; threats: string[] } => {
+export const checkForInjection = (input: string, exclude: string[] = []): { isSafe: boolean; threats: string[] } => {
   const threats: string[] = [];
 
   // Check XSS
-  if (DANGEROUS_PATTERNS.xss.test(input)) {
+  if (!exclude.includes('xss') && DANGEROUS_PATTERNS.xss.test(input)) {
     threats.push('XSS attempt detected');
   }
 
   // Check SQL injection
-  if (DANGEROUS_PATTERNS.sql.test(input)) {
+  if (!exclude.includes('sql') && DANGEROUS_PATTERNS.sql.test(input)) {
     threats.push('SQL injection attempt detected');
   }
 
   // Check command injection
-  if (DANGEROUS_PATTERNS.command.test(input)) {
+  if (!exclude.includes('command') && DANGEROUS_PATTERNS.command.test(input)) {
     threats.push('Command injection attempt detected');
   }
 
   // Check path traversal
-  if (DANGEROUS_PATTERNS.pathTraversal.test(input)) {
+  if (!exclude.includes('pathTraversal') && DANGEROUS_PATTERNS.pathTraversal.test(input)) {
     threats.push('Path traversal attempt detected');
   }
 
   // Check file injection
-  if (DANGEROUS_PATTERNS.fileInjection.test(input)) {
+  if (!exclude.includes('fileInjection') && DANGEROUS_PATTERNS.fileInjection.test(input)) {
     threats.push('File injection attempt detected');
   }
 
   // Check LDAP injection
-  if (DANGEROUS_PATTERNS.ldap.test(input)) {
+  if (!exclude.includes('ldap') && DANGEROUS_PATTERNS.ldap.test(input)) {
     threats.push('LDAP injection attempt detected');
   }
 
   // Check NoSQL injection
-  if (DANGEROUS_PATTERNS.nosql.test(input)) {
+  if (!exclude.includes('nosql') && DANGEROUS_PATTERNS.nosql.test(input)) {
     threats.push('NoSQL injection attempt detected');
   }
 
@@ -251,9 +251,9 @@ export const validatePassword = (password: string): ValidationResult => {
 
 export const validateURL = (url: string): ValidationResult => {
   const sanitized = sanitizeInput(url, 'url');
-  
+
   // Basic URL validation
-  const urlPattern = /^https?:\/\/(?:www\.)?[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?$/;
+  const urlPattern = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/i;
   const basicValidation = validateInput(sanitized, {
     minLength: 5,
     maxLength: 2048,
@@ -267,7 +267,7 @@ export const validateURL = (url: string): ValidationResult => {
     errors.push('Invalid URL format');
   }
 
-  const injectionCheck = checkForInjection(sanitized);
+  const injectionCheck = checkForInjection(sanitized, ['fileInjection']);
 
   return {
     isValid: basicValidation.isValid && injectionCheck.isSafe && urlPattern.test(sanitized),
@@ -317,7 +317,7 @@ export const validateFileUpload = (file: File): { isValid: boolean; errors: stri
     trimWhitespace: true,
     forbiddenChars: /[<>:"|?*\\\/]/g
   });
-  
+
   if (!nameValidation.isValid) {
     errors.push(...nameValidation.errors);
   }
@@ -333,15 +333,15 @@ export const escapeCSVValue = (value: string | undefined): string => {
   if (!value) return '';
 
   let str = String(value);
-  
+
   // Remove dangerous characters
   str = str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
-  
+
   // Escape formula injection
   if (/^[=\+\-@\t\r]/.test(str)) {
     str = "'" + str;
   }
-  
+
   // Escape quotes and newlines
   str = str.replace(/"/g, '""');
   str = str.replace(/\n/g, '\\n');

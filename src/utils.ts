@@ -646,6 +646,12 @@ const WORD_LIST_PASSPHRASE = [
   "milk", "tea", "coffee", "sugar", "salt", "honey", "computer", "phone", "screen", "keyboard"
 ];
 
+const secureRandomInt = (max: number): number => {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] % max;
+};
+
 export const generatePasswordFromSettings = (settings: GeneratorSettings): string => {
   if (settings.mode === 'memorable') {
     const wordCount = settings.wordCount || 3;
@@ -657,20 +663,20 @@ export const generatePasswordFromSettings = (settings: GeneratorSettings): strin
 
     const selectedWords: string[] = [];
     for (let i = 0; i < wordCount; i++) {
-      let word = list[Math.floor(Math.random() * list.length)];
+      let word = list[secureRandomInt(list.length)];
       if (capitalize) {
         word = word.charAt(0).toUpperCase() + word.slice(1);
       }
 
       // Inject Number randomly
-      if (includeNumbers && Math.random() > 0.6) {
-        word += Math.floor(Math.random() * 10);
+      if (includeNumbers && secureRandomInt(10) > 6) {
+        word += secureRandomInt(10);
       }
 
       // Inject Symbol randomly
-      if (includeSymbols && Math.random() > 0.7) {
+      if (includeSymbols && secureRandomInt(10) > 7) {
         const symbols = '!@#$%^&*';
-        word += symbols[Math.floor(Math.random() * symbols.length)];
+        word += symbols[secureRandomInt(symbols.length)];
       }
 
       selectedWords.push(word);
@@ -689,14 +695,9 @@ export const generatePasswordFromSettings = (settings: GeneratorSettings): strin
   if (settings.includeNumbers) chars += numbers;
   if (settings.includeSymbols) chars += symbols;
 
-  if (chars === lowercase && !settings.includeUppercase && !settings.includeNumbers && !settings.includeSymbols) {
-    // Fallback
-  }
-
   let generated = '';
   for (let i = 0; i < settings.length; i++) {
-    const randomIndex = Math.floor(Math.random() * chars.length);
-    generated += chars[randomIndex];
+    generated += chars[secureRandomInt(chars.length)];
   }
   return generated;
 };
