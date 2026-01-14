@@ -26,8 +26,15 @@ interface SecurityLogEntry {
 const DB_NAME = 'winvault-security-logs';
 const STORE_NAME = 'audit_trail';
 
+// Log rotation configuration
+const MAX_LOGS = 1000;
+const MAX_AGE_DAYS = 30;
+const MAX_AGE_MS = MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+
 class SecurityLoggerService {
     private dbPromise;
+    private lastRotationTime: number = 0;
+    private rotationInterval: number = 24 * 60 * 60 * 1000; // 24 hours
 
     constructor() {
         this.dbPromise = openDB(DB_NAME, 1, {
@@ -71,8 +78,89 @@ class SecurityLoggerService {
                 console.log(`[Security Log] ${type}: ${details}`);
             }
 
+            // Check if rotation is needed (every 100 logs or every 24 hours)
+            await this.checkRotationNeeded();
+
         } catch (error) {
             console.error('Failed to write security log:', error);
+        }
+    }
+
+    /**
+     * Check if log rotation is needed and perform it
+     */
+    private async checkRotationNeeded(): Promise<void> {
+        const now = Date.now();
+
+        // Check time-based rotation
+        if (now - this.lastRotationTime > this.rotationInterval) {
+            await this.rotateLogs();
+            this.lastRotationTime = now;
+            return;
+        }
+
+        // Check count-based rotation (sample check)
+        try {
+            const db = await this.dbPromise;
+            const count = await db.count(STORE_NAME);
+            if (count > MAX_LOGS) {
+                await this.rotateLogs();
+                this.lastRotationTime = now;
+            }
+        } catch (error) {
+            console.error('Failed to check log count:', error);
+        }
+    }
+
+    /**
+     * Rotate logs - delete old logs based on age and count
+     */
+    async rotateLogs(): Promise<void> {
+        try {
+            const db = await this.dbPromise;
+            const now = Date.now();
+
+            // Get all logs to check age
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const index = tx.store.index('timestamp');
+            let cursor = await index.openCursor(null, 'prev');
+
+            let count = 0;
+            const idsToDelete: number[] = [];
+
+            while (cursor) {
+                count++;
+
+                // Delete if too old
+                if (now - cursor.value.timestamp > MAX_AGE_MS) {
+                    idsToDelete.push(cursor.value.id);
+                }
+
+                // Stop if we've processed enough logs
+                if (count > MAX_LOGS) {
+                    // Keep only the most recent MAX_LOGS
+                    // Any logs beyond this point should be deleted
+                    let deleteCursor = await cursor.continue();
+                    while (deleteCursor) {
+                        idsToDelete.push(deleteCursor.value.id);
+                        deleteCursor = await deleteCursor.continue();
+                    }
+                    break;
+                }
+
+                cursor = await cursor.continue();
+            }
+
+            // Delete old logs
+            for (const id of idsToDelete) {
+                await db.delete(STORE_NAME, id);
+            }
+
+            if (idsToDelete.length > 0) {
+                console.log(`[Security Log] Rotated ${idsToDelete.length} old log entries`);
+            }
+        } catch (error) {
+            console.error('Failed to rotate logs:', error);
         }
     }
 
@@ -118,6 +206,7 @@ class SecurityLoggerService {
     async clearLogs(): Promise<void> {
         const db = await this.dbPromise;
         await db.clear(STORE_NAME);
+        this.lastRotationTime = Date.now();
     }
 }
 

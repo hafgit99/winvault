@@ -758,24 +758,32 @@ export const hashPassword = async (password: string, providedSalt?: Uint8Array):
   // Default: 64MB / 3 Iterations (Safe Standard)
   let memory = 65536;
   let iterations = 3;
+  let parallelism = 1;
 
   // Detect Hardware (CPU Cores)
   const cores = navigator.hardwareConcurrency || 4;
 
   if (cores >= 8) {
-    // High-End PC: Increase memory to 128MB or iterations to 4
+    // High-End PC: Increase memory to 128MB, iterations to 4, parallelism to 4
     memory = 131072; // 128 MiB
     iterations = 4;
+    parallelism = 4;
+  } else if (cores >= 4) {
+    // Mid-Range PC: 64MB, 3 iterations, parallelism to 2
+    memory = 65536; // 64 MiB
+    iterations = 3;
+    parallelism = 2;
   } else if (cores <= 2) {
     // Low-End Device: Downscale slightly to prevent crash/freeze but keep security
     memory = 32768; // 32 MiB
     iterations = 3;
+    parallelism = 1;
   }
 
   const hash = await argon2id({
     password,
     salt,
-    parallelism: 1,
+    parallelism: parallelism,
     iterations: iterations,
     memorySize: memory,
     hashLength: 32,

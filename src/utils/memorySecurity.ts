@@ -1,13 +1,26 @@
 // Secure memory utilities for WinVault
 // Implements secure string handling and memory cleanup
+import NativeMemoryLock from './nativeMemoryLock';
 
 export class SecureString {
   private data: Uint8Array;
   private isDestroyed: boolean = false;
+  private locked: boolean = false;
 
   constructor(text: string) {
     // Convert string to Uint8Array for secure handling
     this.data = new TextEncoder().encode(text);
+
+    // Try to lock memory if native support is available
+    if (typeof Buffer !== 'undefined') {
+      try {
+        const buffer = Buffer.from(this.data.buffer);
+        this.locked = NativeMemoryLock.lock(buffer);
+      } catch (e) {
+        // Locking failed, continue without it
+        this.locked = false;
+      }
+    }
   }
 
   // Get text value (for when needed)
@@ -18,18 +31,29 @@ export class SecureString {
     return new TextDecoder().decode(this.data);
   }
 
-  // Securely destroy the string from memory
+  // Securely destroy string from memory
   destroy(): void {
     if (this.isDestroyed) return;
-    
+
+    // Unlock memory if it was locked
+    if (this.locked && typeof Buffer !== 'undefined') {
+      try {
+        const buffer = Buffer.from(this.data.buffer);
+        NativeMemoryLock.unlock(buffer);
+      } catch (e) {
+        // Unlock failed, continue with cleanup
+      }
+    }
+
     // Overwrite memory with random data
     for (let i = 0; i < this.data.length; i++) {
       this.data[i] = Math.floor(Math.random() * 256);
     }
-    
-    // Clear the reference
+
+    // Clear reference
     this.data = new Uint8Array(0);
     this.isDestroyed = true;
+    this.locked = false;
   }
 
   // Check if destroyed
@@ -69,7 +93,7 @@ export class MemoryManager {
 
     this.cleanupInterval = setInterval(() => {
       this.cleanupAll();
-      
+
       // Force garbage collection if available (Node.js environment)
       if (typeof global !== 'undefined' && (global as any).gc) {
         (global as any).gc();
@@ -129,31 +153,31 @@ export class SecureClipboard {
       // Simple encryption for clipboard
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const encoded = new TextEncoder().encode(text);
-      
+
       const encrypted = await crypto.subtle.encrypt(
         { name: 'AES-GCM', iv },
         await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt']),
         encoded
       );
-      
+
       const encryptedArray = new Uint8Array(encrypted);
       const ivArray = new Uint8Array(iv);
-      
+
       const payload = JSON.stringify({
         data: Array.from(encryptedArray).map(b => b.toString(16).padStart(2, '0')).join(''),
         iv: Array.from(ivArray).map(b => b.toString(16).padStart(2, '0')).join(''),
         timestamp: Date.now()
       });
-      
+
       await navigator.clipboard.writeText(payload);
-      
+
       // Reset monitoring
       this.accessCount = 0;
       this.lastActivity = Date.now();
-      
+
       // Start monitoring
       this.startMonitoring();
-      
+
       // Clear any existing timeout
       if (this.activeClearTimeout) {
         clearTimeout(this.activeClearTimeout);
@@ -186,7 +210,7 @@ export class SecureClipboard {
             if (payload.data && payload.iv) {
               // Our encrypted content - increment access count
               this.accessCount++;
-              
+
               // Clear if accessed multiple times
               if (this.accessCount > 2) {
                 console.warn('Multiple clipboard accesses detected');
@@ -217,7 +241,7 @@ export class SecureClipboard {
       /^[a-f0-9]{32,}$/i, // Hash pattern
       /^[A-Za-z0-9+/]{20,}={0,2}$/, // Base64 pattern
     ];
-    
+
     return sensitivePatterns.some(pattern => pattern.test(content));
   }
 
@@ -250,7 +274,7 @@ export class SecureClipboard {
   static async copy(text: string, clearAfterMs: number = 5000): Promise<void> {
     try {
       await navigator.clipboard.writeText(text);
-      
+
       if (this.activeClearTimeout) {
         clearTimeout(this.activeClearTimeout);
       }
@@ -343,7 +367,7 @@ export class MemoryMonitor {
   static checkForMemoryLeak(): boolean {
     const trend = this.getMemoryTrend();
     const currentUsage = this.getCurrentMemoryUsage();
-    
+
     // Consider it a leak if memory is increasing and above threshold
     return trend === 'increasing' && currentUsage > 50 * 1024 * 1024; // 50MB
   }
@@ -368,11 +392,11 @@ export class MemoryMonitor {
 export const initializeMemorySecurity = (): void => {
   // Start automatic cleanup
   MemoryManager.startAutoCleanup(30000); // Every 30 seconds
-  
+
   // Start memory monitoring
   setInterval(() => {
     MemoryMonitor.recordMemoryUsage();
-    
+
     const stats = MemoryMonitor.getMemoryStats();
     if (stats.leakSuspected) {
       console.warn('Potential memory leak detected:', stats);
