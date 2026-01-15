@@ -48,6 +48,40 @@ WinVault utilizes military-grade encryption and advanced protection mechanisms:
 
 ### Installation
 
+#### Windows
+
+Download the latest installer from the [Releases](../../releases) page and run the setup.
+
+#### Linux
+
+Choose your preferred package format:
+
+**AppImage (Universal Linux)** - Works on all Linux distributions:
+```bash
+chmod +x WinVault-2.1.0-x86_64.AppImage
+./WinVault-2.1.0-x86_64.AppImage
+```
+
+**DEB Package (Debian/Ubuntu/Mint)** - Install via package manager:
+```bash
+sudo dpkg -i WinVault_2.1.0_amd64.deb
+sudo apt-get install -f  # Install dependencies if needed
+```
+
+**Available Versions:**
+- **x86_64 (Intel/AMD)**: `WinVault-2.1.0-x86_64.AppImage` (131 MB), `WinVault_2.1.0_amd64.deb` (85 MB)
+- **ARM64 (Apple Silicon/ARM devices)**: `WinVault-2.1.0-arm64.AppImage` (131 MB), `WinVault_2.1.0_arm64.deb` (80 MB)
+
+**Checksums:**
+```
+WinVault-2.1.0-x86_64.AppImage: a0cc6dcac0395547cff18d6839a8ea605d3effe0b293db6e90bcf43bee0f79ab
+WinVault_2.1.0_amd64.deb: 17a017ed49fd137b06cba6decb7d0d2cbbfd3ac0a9849bb16bdd0abc97dd073b
+WinVault-2.1.0-arm64.AppImage: 8496b1d5afc2c57f92bd4f63df8de460c93c5356b371eea46b4f16e630e52b3b
+WinVault_2.1.0_arm64.deb: d889a98c6fad7a73904b6347602302cbd419b26e0f5db49595df87f96661d378
+```
+
+#### Development
+
 1. Clone the repository and install dependencies:
    ```bash
    npm install
@@ -61,6 +95,15 @@ WinVault utilizes military-grade encryption and advanced protection mechanisms:
 3. Run the Electron application locally:
    ```bash
    npm run electron:dev
+   ```
+
+4. Build Linux packages:
+   ```bash
+   npm run build:linux        # Build all Linux packages
+   npm run build:linux:x64    # Build x64 only
+   npm run build:linux:arm64  # Build ARM64 only
+   npm run build:linux:appimage  # Build AppImage only
+   npm run build:linux:deb   # Build DEB only
    ```
 
 ### 🧪 Running Tests

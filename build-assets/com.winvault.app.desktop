@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=WinVault
+GenericName=Password Manager
+Comment=Secure Desktop Password Manager
+Exec=winvault %U
+Icon=winvault
+Type=Application
+Categories=Utility;Security;
+StartupWMClass=WinVault
+Keywords=password;security;manager;vault;encryption;

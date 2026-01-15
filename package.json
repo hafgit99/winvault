@@ -17,6 +17,7 @@
     "react-dom": "^18.2.0",
     "react-virtualized-auto-sizer": "^1.0.20",
     "react-window": "^1.8.9",
+    "sharp": "^0.34.5",
     "zustand": "^5.0.9"
   },
   "overrides": {
@@ -30,6 +31,11 @@
     "preview": "vite preview",
     "electron:dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://127.0.0.1:4000 && cross-env ELECTRON_START_URL=http://127.0.0.1:4000 electron .\"",
     "electron:build": "npm run build && electron-builder -w",
+    "build:linux": "npm run build && electron-builder -l",
+    "build:linux:x64": "npm run build && electron-builder -l --x64",
+    "build:linux:arm64": "npm run build && electron-builder -l --arm64",
+    "build:linux:appimage": "npm run build && electron-builder -l --AppImage",
+    "build:linux:deb": "npm run build && electron-builder -l --deb",
     "test": "vitest"
   },
   "build": {
@@ -61,6 +67,51 @@
       "deleteAppDataOnUninstall": true,
       "license": "EULA.txt",
       "unicode": true
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build-assets/icons/linux/",
+      "category": "Utility",
+      "maintainer": "WinVault Team <sales@hetech-me.space>",
+      "vendor": "WinVault",
+      "synopsis": "Secure Desktop Password Manager",
+      "description": "WinVault is a zero-knowledge, military-grade encrypted password manager",
+      "desktop": {
+        "Name": "WinVault",
+        "GenericName": "Password Manager",
+        "Comment": "Secure Desktop Password Manager",
+        "Categories": "Utility;Security;",
+        "Keywords": "password;security;manager;vault;encryption;"
+      }
+    },
+    "appImage": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "deb": {
+      "artifactName": "${productName}_${version}_${arch}.${ext}",
+      "depends": [
+        "gconf2",
+        "gconf-service",
+        "libnotify4",
+        "libappindicator1",
+        "libxtst6",
+        "libnss3"
+      ]
     }
   },
   "devDependencies": {
